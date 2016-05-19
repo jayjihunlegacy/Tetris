@@ -1,4 +1,4 @@
-#!/usr/bin/python
+﻿#!/usr/bin/python
 
 # tetris.py
 
@@ -20,7 +20,7 @@ class Tetris(wx.Frame):
         self.board.SetFocus()
         self.board.start()
 
-        self.Centre()
+        self.Center()
         self.Show(True)
        
 
@@ -32,8 +32,8 @@ class Board(wx.Panel):
     ID_TIMER = 1
 
     def __init__(self, parent):
-        wx.Panel.__init__(self, parent)
-        
+        wx.Panel.__init__(self, parent,  style=wx.WANTS_CHARS)
+       
         self.initBoard()
         
     def initBoard(self):    
@@ -111,23 +111,20 @@ class Board(wx.Panel):
 
         dc = wx.PaintDC(self)        
 
-        size = self.GetClientSize()
-        boardTop = size.GetHeight() - Board.BoardHeight * self.squareHeight()
-        
         for i in range(Board.BoardHeight):
             for j in range(Board.BoardWidth):
                 shape = self.shapeAt(j, Board.BoardHeight - i - 1)
                 if shape != Tetrominoes.NoShape:
                     self.drawSquare(dc,
                         0 + j * self.squareWidth(),
-                        boardTop + i * self.squareHeight(), shape)
+                        i * self.squareHeight(), shape)
 
         if self.curPiece.shape() != Tetrominoes.NoShape:
             for i in range(4):
                 x = self.curX + self.curPiece.x(i)
                 y = self.curY - self.curPiece.y(i)
                 self.drawSquare(dc, 0 + x * self.squareWidth(),
-                    boardTop + (Board.BoardHeight - y - 1) * self.squareHeight(),
+                    (Board.BoardHeight - y - 1) * self.squareHeight(),
                     self.curPiece.shape())
 
 
@@ -145,6 +142,7 @@ class Board(wx.Panel):
         if self.isPaused:
             return
         elif keycode == wx.WXK_LEFT:
+            
             self.tryMove(self.curPiece, self.curX - 1, self.curY)
         elif keycode == wx.WXK_RIGHT:
             self.tryMove(self.curPiece, self.curX + 1, self.curY)
