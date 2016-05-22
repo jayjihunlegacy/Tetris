@@ -25,10 +25,9 @@
     <Compile Include="Main.py">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="NewTetrisCore.py">
+    <Compile Include="TetrisCore.py">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="TetrisCore.py" />
   </ItemGroup>
   <PropertyGroup>
     <VisualStudioVersion Condition="'$(VisualStudioVersion)' == ''">10.0</VisualStudioVersion>

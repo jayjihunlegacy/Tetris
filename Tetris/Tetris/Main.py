@@ -1,24 +1,22 @@
-﻿#from TetrisCore import *
-from NewTetrisCore import *
+﻿from TetrisCore import *
 
 def play_history(filename):
 	folder='C:/Tetris/'
 	full = folder+filename
 	app = wx.App()
-	Tetris(
-		inputDevice=Board.INPUT_SAVE,
-		inputFile=full
-		)
+	tetris = Tetris()
+	tetris.initFrame('Save',full)
 	app.MainLoop()
 
 def human_play():
 	app = wx.App()
-	Tetris()
+	tetris = Tetris()
+	tetris.initFrame('Human')
 	app.MainLoop()
 
 def main():
 	#human_play()
-	play_history('History_13_2016-05-22_17-29-47-653743.sav')
+	play_history('History_51_2016-05-22_18-55-49-753169.sav')
 
 if __name__=='__main__':
 	main()
