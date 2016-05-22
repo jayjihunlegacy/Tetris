@@ -22,7 +22,7 @@ class Tetris(wx.Frame):
 
         self.Centre()
         self.Show(True)
-       
+        
 
 class Board(wx.Panel):
     
