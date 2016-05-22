@@ -28,7 +28,7 @@ class Board(wx.Panel):
     
     BoardWidth = 10
     BoardHeight = 22
-    Speed = 300
+    Speed = 2000
     ID_TIMER = 1
 
     def __init__(self, parent):
@@ -135,25 +135,30 @@ class Board(wx.Panel):
             return
 
         keycode = event.GetKeyCode()
-
+        print(keycode)
         if keycode == ord('P') or keycode == ord('p'):
             self.pause()
             return
         if self.isPaused:
             return
         elif keycode == wx.WXK_LEFT:
-            
             self.tryMove(self.curPiece, self.curX - 1, self.curY)
+
         elif keycode == wx.WXK_RIGHT:
             self.tryMove(self.curPiece, self.curX + 1, self.curY)
+
         elif keycode == wx.WXK_DOWN:
-            self.tryMove(self.curPiece.rotatedRight(), self.curX, self.curY)
+            self.oneLineDown()
+
         elif keycode == wx.WXK_UP:
-            self.tryMove(self.curPiece.rotatedLeft(), self.curX, self.curY)
+            self.tryMove(self.curPiece.rotatedRight(), self.curX, self.curY)
+
         elif keycode == wx.WXK_SPACE:
             self.dropDown()
+
         elif keycode == ord('D') or keycode == ord('d'):
             self.oneLineDown()
+
         else:
             event.Skip()
 
@@ -161,11 +166,14 @@ class Board(wx.Panel):
     def OnTimer(self, event):
         
         if event.GetId() == Board.ID_TIMER:
+            '''
             if self.isWaitingAfterLine:
+                print("Reached here")
                 self.isWaitingAfterLine = False
                 self.newPiece()
-            else:
-                self.oneLineDown()
+            '''
+            #else:
+            self.oneLineDown()
         else:
             event.Skip()
 
@@ -184,6 +192,7 @@ class Board(wx.Panel):
     def oneLineDown(self):
         
         if not self.tryMove(self.curPiece, self.curX, self.curY - 1):
+            print("Here1")
             self.pieceDropped()
             
 
@@ -197,6 +206,7 @@ class Board(wx.Panel):
         self.removeFullLines()
 
         if not self.isWaitingAfterLine:
+            print("Here2")
             self.newPiece()
 
 
@@ -229,7 +239,7 @@ class Board(wx.Panel):
             if numFullLines > 0:
                 self.numLinesRemoved = self.numLinesRemoved + numFullLines
                 statusbar.SetStatusText(str(self.numLinesRemoved)) 
-                self.isWaitingAfterLine = True
+                #self.isWaitingAfterLine = True
                 self.curPiece.setShape(Tetrominoes.NoShape)
                 self.Refresh()
 
@@ -428,8 +438,3 @@ class Shape(object):
             result.setY(i, self.x(i))
 
         return result
-
-
-app = wx.App()
-Tetris(None, title='Tetris')
-app.MainLoop()
