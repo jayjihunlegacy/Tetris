@@ -2,7 +2,6 @@
 import random
 import datetime
 import pickle
-from Boards import *
 
 class Tetris(wx.Frame):
 	def __init__(self):
