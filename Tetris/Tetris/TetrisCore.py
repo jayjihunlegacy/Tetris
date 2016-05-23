@@ -143,7 +143,7 @@ class Board(wx.Panel):
 	BoardWidth=10
 	BoardHeight=22
 	TICKS_FOR_LINEDOWN=100
-
+	keycodes = [wx.WXK_LEFT, wx.WXK_RIGHT, wx.WXK_UP, wx.WXK_DOWN, wx.WXK_SPACE]
 	ID_TIMER = 1
 
 	def __init__(self, parent):
@@ -189,10 +189,12 @@ class Board(wx.Panel):
 		
 
 	def shapeAt(self, x,y):
-		return self.board[(y*Board.BoardWidth) + int(x)]
+		return self.board[y][x]
+		#return self.board[(y*Board.BoardWidth) + int(x)]
 
 	def setShapeAt(self,x,y,shape):
-		self.board[(y*Board.BoardWidth) + int(x)] = shape
+		self.board[y][x] = shape
+		#self.board[(y*Board.BoardWidth) + int(x)] = shape
 
 	def squareWidth(self):
 		return self.GetClientSize().GetWidth() / Board.BoardWidth
@@ -242,8 +244,14 @@ class Board(wx.Panel):
 		'''
 		clear the board.
 		'''
-		for i in range(Board.BoardHeight * Board.BoardWidth):
-			self.board.append(Tetrominoes.NoShape)
+		self.board=[]
+		
+		for j in range(Board.BoardHeight):
+			lis=[Tetrominoes.NoShape for i in range(Board.BoardWidth)]		
+			self.board.append(lis)
+
+		#for i in range(Board.BoardHeight * Board.BoardWidth):
+	#		self.board.append(Tetrominoes.NoShape)
 
 	def OnPaint(self, event):
 		dc = wx.PaintDC(self)
@@ -379,7 +387,7 @@ class Board(wx.Panel):
 		shape_str = ['Noshape', 'Z-shape', 'S-shape', '|-shape', 'T-shape', 'Square', 'L-shape', "L'-shape"]
 		print('Next Shape :',shape_str[shape])
 
-		self.curX = Board.BoardWidth/2 + 1
+		self.curX = Board.BoardWidth//2 + 1
 		self.curY = Board.BoardHeight - 1 + self.curPiece.minY()
 
 		#when cannot place new piece, GAME OVER !
@@ -482,7 +490,6 @@ class Human_Board(Board):
 		keycode = event.GetKeyCode()
 
 		if keycode == ord('R') or keycode == ord('r'):
-			print('Here')
 			self.initBoard(self.inputDevice)
 			self.start()
 			return
@@ -496,10 +503,8 @@ class Human_Board(Board):
 		if self.isPaused or self.isOver:
 			return
 
-		valid_keys = [wx.WXK_LEFT, wx.WXK_RIGHT, wx.WXK_UP, wx.WXK_DOWN, wx.WXK_SPACE]
-
 		# 3. if valid key pressed, put it to save kit
-		if keycode in valid_keys:
+		if keycode in Board.keycodes:
 			self.keys.append((self.ticks, keycode))
 			self.perform_valid_key(keycode)
 		else:
@@ -554,7 +559,7 @@ class Save_Board(Board):
 			print('Current tick : %i, Data : (%i,%i)'%(self.ticks,tick,piece))
 			self.pieces = self.pieces[1:]
 
-		self.curX = Board.BoardWidth/2 + 1
+		self.curX = Board.BoardWidth//2 + 1
 		self.curY = Board.BoardHeight - 1 + self.curPiece.minY()
 
 		#when cannot place new piece, GAME OVER !
@@ -583,11 +588,13 @@ class Machine_Board(Board):
 		'''
 		#output must be in form (LEFT, RIGHT, UP, DOWN, SPACE)		
 		output = self.machine.feedForward(self.board, self.ticks)
-		keycodes = [wx.WXK_LEFT, wx.WXK_RIGHT, wx.WXK_UP, wx.WXK_DOWN, wx.WXK_SPACE]
+		if output is None:
+			return
+				
 		for i in range(5):
 			if output[i]>0:
-				self.keys.append((self.ticks, keycodes[i]))
-				self.perform_valid_key(keycodes[i])
+				self.keys.append((self.ticks, Board.keycodes[i]))
+				self.perform_valid_key(Board.keycodes[i])
 
 
 class Train_Board(Board):

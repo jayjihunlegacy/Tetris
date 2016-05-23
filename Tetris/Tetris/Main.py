@@ -6,8 +6,8 @@ def play_machine():
 	app=wx.App()
 
 	#this should be changed to loading 'specific machine'
-	#machine = DeterministicMachine()
-	machine = RandomMachine()
+	machine = DeterministicMachine()
+	#machine = RandomMachine()
 
 	tetris=Tetris()
 	tetris.initFrame('Machine', inputMachine=machine)

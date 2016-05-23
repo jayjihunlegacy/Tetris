@@ -1,4 +1,6 @@
 import random as r
+from TetrisCore import *
+import copy
 class Machine(object):
 	def __init__(self, gene=None):
 		if gene is None:
@@ -21,6 +23,17 @@ class Machine(object):
 		#output must be in form (LEFT, RIGHT, DOWN, UP, SPACE)
 		return output
 
+	def digitize(input):
+		output = []
+		for j in range(Board.BoardHeight):
+			lis=[]
+			for i in range(Board.BoardWidth):
+				if input[j][i]!=0:
+					lis+=[1]
+				else:
+					lis+=[0]
+			output+=lis
+		return output
 
 
 class RandomMachine(Machine):
@@ -47,9 +60,10 @@ class RandomMachine(Machine):
 
 
 class DeterministicMachine(Machine):
-	def __init__(self):
+	def __init__(self, cool_time=100):
 		super().__init__()
 		self.name='DeterministicMachine'
+		self.TICK_COOLTIME = cool_time
 		pass
 
 	def instantiate(self):
@@ -57,7 +71,10 @@ class DeterministicMachine(Machine):
 
 	def feedForward(self, input, tick):
 		#output must be in form (LEFT, RIGHT, UP, DOWN, SPACE)
-		pass
+
+		board = Machine.digitize(input)
+	
+		return (0,0,0,0,0)
 
 
 
