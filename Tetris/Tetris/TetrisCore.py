@@ -7,7 +7,7 @@ class Tetris(wx.Frame):
 	def __init__(self):
 		wx.Frame.__init__(self, None, title='Tetris', size=(360, 760))
 
-	def initFrame(self,mode,inputFile=None):#inputDevice, inputFile):
+	def initFrame(self,mode,inputFile=None,inputMachine=None):
 		'''
 		initialize frame.
 		'''
@@ -21,9 +21,9 @@ class Tetris(wx.Frame):
 		elif mode == 'Save':
 			self.board = Save_Board(self, inputFile)
 		elif mode == 'Machine':
-			self.board = Machine_Board(self)
-		elif mode == 'Learn':
-			self.board = Learn_Board(self)
+			self.board = Machine_Board(self, inputMachine)
+		elif mode == 'Train':
+			self.board = Train_Board(self, inputMachine)
 		else:
 			print('Invalid mode')
 		self.board.SetFocus()
@@ -149,6 +149,7 @@ class Board(wx.Panel):
 	def __init__(self, parent):
 		wx.Panel.__init__(self, parent, style=wx.WANTS_CHARS)
 		self.initBoard()
+		self.name = 'Noname'
 
 	def initBoard(self):
 		'''
@@ -179,10 +180,11 @@ class Board(wx.Panel):
 		#5. bind event handlers.
 		self.Bind(wx.EVT_PAINT, self.OnPaint)
 		self.Bind(wx.EVT_TIMER, self.OnTimer, id=Board.ID_TIMER)
-
-
+		
 		self.clearBoard()
 
+		self.keys=[]
+		self.pieces=[]
 		self.initBoard_specific()
 		
 
@@ -264,14 +266,19 @@ class Board(wx.Panel):
 					
 	def perform_valid_key(self, keycode):
 		if keycode == wx.WXK_LEFT:
+			print('Pressed Key : LEFT')
 			self.tryMove(self.curPiece, self.curX - 1, self.curY)
 		elif keycode == wx.WXK_RIGHT:
+			print('Pressed Key : RIGHT')
 			self.tryMove(self.curPiece, self.curX + 1, self.curY)
-		elif keycode == wx.WXK_DOWN:
-			self.oneLineDown()
 		elif keycode == wx.WXK_UP:
+			print('Pressed Key : UP')
 			self.tryMove(self.curPiece.rotatedRight(), self.curX, self.curY)
+		elif keycode == wx.WXK_DOWN:
+			print('Pressed Key : DOWN')
+			self.oneLineDown()		
 		elif keycode == wx.WXK_SPACE:
+			print('Pressed Key : SPACE')
 			self.dropDown()
 
 	def OnTimer(self, event):
@@ -369,7 +376,8 @@ class Board(wx.Panel):
 		self.nextPiece.setRandomShape()
 		shape = self.nextPiece.shape()
 		self.pieces.append((self.ticks,shape))
-		print(shape)
+		shape_str = ['Noshape', 'Z-shape', 'S-shape', '|-shape', 'T-shape', 'Square', 'L-shape', "L'-shape"]
+		print('Next Shape :',shape_str[shape])
 
 		self.curX = Board.BoardWidth/2 + 1
 		self.curY = Board.BoardHeight - 1 + self.curPiece.minY()
@@ -444,7 +452,7 @@ class Board(wx.Panel):
 	def save_history(self):
 		now = datetime.datetime.now()
 		time_string = str(now).replace(' ','_').replace('.',':').replace(':','-')
-		filename = 'History_'+str(self.numLinesRemoved)+'_'+time_string+'.sav'
+		filename = self.name+'_'+str(self.numLinesRemoved)+'_'+time_string+'.sav'
 		folder = 'C:/Tetris/'
 		full=folder+filename
 		with open(full, 'wb') as f:
@@ -456,11 +464,10 @@ class Board(wx.Panel):
 class Human_Board(Board):
 	def __init__(self, parent):
 		super().__init__(parent)
+		self.name = 'Human'
 
 	def initBoard_specific(self):
 		self.Bind(wx.EVT_KEY_DOWN, self.OnKeyDown)
-		self.keys = []
-		self.pieces=[]
 
 	def OnKeyDown(self, event):
 		'''
@@ -489,7 +496,7 @@ class Human_Board(Board):
 		if self.isPaused or self.isOver:
 			return
 
-		valid_keys = [wx.WXK_LEFT, wx.WXK_RIGHT, wx.WXK_DOWN, wx.WXK_UP, wx.WXK_SPACE]
+		valid_keys = [wx.WXK_LEFT, wx.WXK_RIGHT, wx.WXK_UP, wx.WXK_DOWN, wx.WXK_SPACE]
 
 		# 3. if valid key pressed, put it to save kit
 		if keycode in valid_keys:
@@ -508,6 +515,7 @@ class Save_Board(Board):
 	def __init__(self, parent, inputFile):
 		self.inputFile = inputFile
 		super().__init__(parent)
+		
 
 	def initBoard_specific(self):
 		try:
@@ -557,8 +565,30 @@ class Save_Board(Board):
 	def save_history(self):
 		pass
 
-class Machine_Board(Board):
-	pass
 
-class Learn_Board(Board):
+
+class Machine_Board(Board):
+	def __init__(self, parent,inputMachine):
+		self.machine = inputMachine
+		super().__init__(parent)
+		self.name = inputMachine.name
+
+	def initBoard_specific(self):
+		pass
+
+	def OnTimer_specific(self,event):
+		'''
+		in every tick, feedforward through the machine, and get the result.
+		apply the result.
+		'''
+		#output must be in form (LEFT, RIGHT, UP, DOWN, SPACE)		
+		output = self.machine.feedForward(self.board, self.ticks)
+		keycodes = [wx.WXK_LEFT, wx.WXK_RIGHT, wx.WXK_UP, wx.WXK_DOWN, wx.WXK_SPACE]
+		for i in range(5):
+			if output[i]>0:
+				self.keys.append((self.ticks, keycodes[i]))
+				self.perform_valid_key(keycodes[i])
+
+
+class Train_Board(Board):
 	pass

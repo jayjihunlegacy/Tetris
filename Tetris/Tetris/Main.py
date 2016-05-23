@@ -1,11 +1,31 @@
 ﻿from TetrisCore import *
+from Machine import *
+
+
+def play_machine():
+	app=wx.App()
+
+	#this should be changed to loading 'specific machine'
+	#machine = DeterministicMachine()
+	machine = RandomMachine()
+
+	tetris=Tetris()
+	tetris.initFrame('Machine', inputMachine=machine)
+	app.MainLoop()
+
+def train_machine():
+	app=wx.App()
+	machine = EvolutionMachine()
+	tetris = Tetris()
+	tetris.initFrame('Train', inputMachine=machine)
+	app.MainLoop()
 
 def play_history(filename):
 	folder='C:/Tetris/'
 	full = folder+filename
 	app = wx.App()
 	tetris = Tetris()
-	tetris.initFrame('Save',full)
+	tetris.initFrame('Save',inputFile=full)
 	app.MainLoop()
 
 def human_play():
@@ -16,7 +36,8 @@ def human_play():
 
 def main():
 	#human_play()
-	play_history('History_51_2016-05-22_18-55-49-753169.sav')
+	#play_history('History_51_2016-05-22_18-55-49-753169.sav')
+	play_machine()
 
 if __name__=='__main__':
 	main()
