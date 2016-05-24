@@ -5,7 +5,7 @@ from Machine import *
 def play_machine():
 	app=wx.App()
 
-	#this should be changed to loading 'specific machine'
+	# this should be changed to loading 'specific machine'
 	machine = DeterministicMachine()
 	#machine = RandomMachine()
 

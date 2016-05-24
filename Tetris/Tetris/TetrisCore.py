@@ -146,10 +146,16 @@ class Board(wx.Panel):
 	keycodes = [wx.WXK_LEFT, wx.WXK_RIGHT, wx.WXK_UP, wx.WXK_DOWN, wx.WXK_SPACE]
 	ID_TIMER = 1
 
-	def __init__(self, parent):
-		wx.Panel.__init__(self, parent, style=wx.WANTS_CHARS)
-		self.initBoard()
-		self.name = 'Noname'
+	def __init__(self, parent, dummy=False):		
+		if not dummy:
+			wx.Panel.__init__(self, parent, style=wx.WANTS_CHARS)
+			self.name = 'Noname'
+			self.initBoard()
+		else:
+			self.name = 'Dummy'
+			self.numLinesRemoved=0
+
+		self.isdummy=dummy
 
 	def initBoard(self):
 		'''
@@ -272,22 +278,28 @@ class Board(wx.Panel):
 					(Board.BoardHeight - y - 1) * self.squareHeight(),
 					self.curPiece.shape())
 					
-	def perform_valid_key(self, keycode):
-		if keycode == wx.WXK_LEFT:
-			print('Pressed Key : LEFT')
-			self.tryMove(self.curPiece, self.curX - 1, self.curY)
-		elif keycode == wx.WXK_RIGHT:
-			print('Pressed Key : RIGHT')
-			self.tryMove(self.curPiece, self.curX + 1, self.curY)
-		elif keycode == wx.WXK_UP:
-			print('Pressed Key : UP')
-			self.tryMove(self.curPiece.rotatedRight(), self.curX, self.curY)
-		elif keycode == wx.WXK_DOWN:
-			print('Pressed Key : DOWN')
-			self.oneLineDown()		
-		elif keycode == wx.WXK_SPACE:
-			print('Pressed Key : SPACE')
-			self.dropDown()
+	def perform_valid_key(self, keycode, isstr=False):
+		
+		if keycode == wx.WXK_LEFT or (isstr and keycode=='LEFT'):
+			if not isstr:
+				print('Pressed Key : LEFT')
+			return self.tryMove(self.curPiece, self.curX - 1, self.curY)
+		elif keycode == wx.WXK_RIGHT or (isstr and keycode=='RIGHT'):
+			if not isstr:
+				print('Pressed Key : RIGHT')
+			return self.tryMove(self.curPiece, self.curX + 1, self.curY)
+		elif keycode == wx.WXK_UP or (isstr and keycode=='UP'):
+			if not isstr:
+				print('Pressed Key : UP')
+			return self.tryMove(self.curPiece.rotatedRight(), self.curX, self.curY)
+		elif keycode == wx.WXK_DOWN or (isstr and keycode=='DOWN'):
+			if not isstr:
+				print('Pressed Key : DOWN')
+			return self.oneLineDown()		
+		elif keycode == wx.WXK_SPACE or (isstr and keycode=='SPACE'):
+			if not isstr:
+				print('Pressed Key : SPACE')
+			return self.dropDown()
 
 	def OnTimer(self, event):
 		'''
@@ -339,8 +351,10 @@ class Board(wx.Panel):
 		#remove complete lines.
 		self.removeFullLines()
 
+
 		#spawn new piece
-		self.newPiece()
+		if not self.isdummy:
+			self.newPiece()
 
 	def removeFullLines(self):
 		'''
@@ -349,7 +363,7 @@ class Board(wx.Panel):
 		'''
 
 		numFullLines = 0
-		statusbar=self.GetParent().statusbar
+		
 		rowsToRemove=[]
 
 		for i in range(Board.BoardHeight):
@@ -359,10 +373,9 @@ class Board(wx.Panel):
 					n = n + 1
 			if n == 10:
 				rowsToRemove.append(i)
-
 		rowsToRemove.reverse()
 		for m in rowsToRemove:
-			for k in range(m, Board.BoardHeight):
+			for k in range(m, Board.BoardHeight-1):
 				for l in range(Board.BoardWidth):
 					self.setShapeAt(l, k, self.shapeAt(l, k + 1))
 
@@ -370,9 +383,11 @@ class Board(wx.Panel):
 
 		if numFullLines > 0:
 			self.numLinesRemoved = self.numLinesRemoved + numFullLines
-			statusbar.SetStatusText(str(self.numLinesRemoved))
-			self.curPiece.setShape(Tetrominoes.NoShape)
-			self.Refresh()
+			if not self.isdummy:
+				statusbar=self.GetParent().statusbar
+				statusbar.SetStatusText(str(self.numLinesRemoved))
+				self.curPiece.setShape(Tetrominoes.NoShape)
+				self.Refresh()
 
 	def newPiece(self):
 		'''
@@ -414,7 +429,8 @@ class Board(wx.Panel):
 		self.curPiece = newPiece
 		self.curX = newX
 		self.curY = newY
-		self.Refresh()
+		if not self.isdummy:
+			self.Refresh()
 		return True
 
 	def drawSquare(self,dc,x,y,shape):
@@ -513,6 +529,11 @@ class Human_Board(Board):
 
 	#overriding.
 	def OnTimer_specific(self, event):
+		p=self.curPiece
+		tup=(p.maxX(),p.minX(),p.maxY(),p.minY())
+		#print(tup)
+		print(p.pieceShape)
+		print(self.curX, self.curY)
 		pass
 
 
@@ -586,8 +607,9 @@ class Machine_Board(Board):
 		in every tick, feedforward through the machine, and get the result.
 		apply the result.
 		'''
-		#output must be in form (LEFT, RIGHT, UP, DOWN, SPACE)		
-		output = self.machine.feedForward(self.board, self.ticks)
+		#output must be in form (LEFT, RIGHT, UP, DOWN, SPACE)
+		input = (self.board, self.curX, self.curY, self.curPiece)
+		output = self.machine.feedForward(input, self.ticks)
 		if output is None:
 			return
 				
