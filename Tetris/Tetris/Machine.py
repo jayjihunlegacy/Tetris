@@ -73,7 +73,7 @@ class DeterministicMachine(Machine):
 	#overriding.
 	def instantiate(self):
 		if self.gene is None:
-			self.gene = (-1, -2)
+			self.gene = (-4, -1)
 			#if gene is None, randomly generate.
 			pass
 		#1. number of holes.
@@ -112,8 +112,6 @@ class DeterministicMachine(Machine):
 		if input[3].pieceShape == Tetrominoes.TShape and input[2]==Board.BoardHeight-1:
 			return (0,0,0,1,0)
 
-
-
 		if self.aimPosition is None:
 			board = input[0]
 			
@@ -134,37 +132,18 @@ class DeterministicMachine(Machine):
 			# evaluate the scenarios and pick the best.
 			scores=list()
 			i=0
-			'''
-			for scenario in scenarios:
-				print(i, self.aims[i])
-				score = self.evaluate_scenario(scenario)
-				print('Evaluate scenario :')
-				if scenario is not None:
-					for line in range(3):
-						line = 3-line-1
-						print(scenario[line])
-				else:
-					print(None)
-				print('Score :',score)
-				scores.append(score)
-				i+=1
-			'''
 			scores = [self.evaluate_scenario(scenario) for scenario in scenarios]	
-			print(scores)
-			print(self.aims)
+			#print(scores)
+			#print(self.aims)
 			max_scenario_index = scores.index(max(scores))
 			
 			# set aimPosition according the max_scenario.
 			self.aimPosition = copy.deepcopy(self.aims[max_scenario_index])
 			print("Aim Position Set!!:",self.aimPosition)
-			print("Scenario index : %i, score : "%(max_scenario_index,),scores[max_scenario_index])
-			print("Scenario :")
-			best_scenario = scenarios[max_scenario_index]
-			for j in [2,1,0]:
-				print(best_scenario[j])
+			#print("Scenario index : %i, score : "%(max_scenario_index,),scores[max_scenario_index])
+			#print("Scenario :")
 
 		if tick % self.TICK_COOLTIME == 0:
-			print(self.aimPosition)
 			# try to move to that aimPosition.
 			# if have to rotate
 			if self.aimPosition[1]:
@@ -178,7 +157,6 @@ class DeterministicMachine(Machine):
 			if self.aimPosition[0] < 0:
 				self.aimPosition[0]+=1
 				return (0,1,0,0,0)
-			print('Here, nothing to do anymore.',self.aimPosition)
 			# nothing to do any more.
 			self.aimPosition = None
 			return (0,0,0,0,1)
@@ -191,11 +169,11 @@ class DeterministicMachine(Machine):
 			results = list()
 			for cmd in instruction:
 				if cmd=='U':
-					results.append(board.perform_valid_key('UP', True))
+					results.append(board.perform_valid_key('UP', isstr=True, verbose=False))
 				elif cmd=='L':
-					results.append(board.perform_valid_key('LEFT', True))
+					results.append(board.perform_valid_key('LEFT', isstr=True, verbose=False))
 				elif cmd=='R':
-					results.append(board.perform_valid_key('RIGHT', True))
+					results.append(board.perform_valid_key('RIGHT', isstr=True, verbose=False))
 				else:
 					print('INVALID cmd :',cmd)
 				
@@ -215,13 +193,14 @@ class DeterministicMachine(Machine):
 		x_vector=list()
 		#1. number of holes.
 		hole_num=0
-		for j in range(1, Board.BoardHeight-1):
-			for i in range(1, Board.BoardWidth - 1):
-				# if board[j][i] is hole.
+		for i in range(Board.BoardWidth):
+			upperExist=False
+			for j in reversed(range(Board.BoardHeight)):
 				if scenario[j][i]:
-					continue
-				if scenario[j-1][i] and scenario[j+1][i] and scenario[j][i-1] and scenario[j][i+1]:
+					upperExist=True
+				if (not scenario[j][i]) and upperExist:
 					hole_num+=1
+
 		x_vector.append(hole_num)
 
 		#2. penalty sum.

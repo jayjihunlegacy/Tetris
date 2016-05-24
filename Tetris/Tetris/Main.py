@@ -15,9 +15,9 @@ def play_machine():
 
 def train_machine():
 	app=wx.App()
-	machine = EvolutionMachine()
+	machine = DeterministicMachine()
 	tetris = Tetris()
-	tetris.initFrame('Train', inputMachine=machine)
+	tetris.initFrame('Train', inputMachine=machine, maxTick=2000)
 	app.MainLoop()
 
 def play_history(filename):
@@ -36,8 +36,9 @@ def human_play():
 
 def main():
 	#human_play()
-	#play_history('History_51_2016-05-22_18-55-49-753169.sav')
-	play_machine()
+	play_history('DeterministicMachine_140_2016-05-24_22-15-21-921958.sav')
+	#play_machine()
+	#train_machine()
 
 if __name__=='__main__':
 	main()
