@@ -6,8 +6,8 @@ def play_machine():
 	app=wx.App()
 
 	#this should be changed to loading 'specific machine'
-	machine = DeterministicMachine()
-	#machine = RandomMachine()
+	#machine = DeterministicMachine()
+	machine = RandomMachine()
 
 	tetris=Tetris()
 	tetris.initFrame('Machine', inputMachine=machine)
@@ -36,8 +36,8 @@ def human_play():
 
 def main():
 	#human_play()
-	#play_history('History_51_2016-05-22_18-55-49-753169.sav')
-	play_machine()
+	play_history('RandomMachine_0_2016-05-23_15-33-20-094546.sav')
+	#play_machine()
 
 if __name__=='__main__':
 	main()
