@@ -230,25 +230,195 @@ class DeterministicMachine(Machine):
 		return dot_product
 
 class EvolutionMachine(Machine):
-	def generate_genes(pop_per_gen):
-		return [None, None]
-	def make_offsprings(parent_genes, pop_per_gen):
-		return [None, None]
+	INPUT_NEURON_NUM = 81
+	HIDDEN_NEURON_NUM = 20
+	OUTPUT_NEURON_NUM = 5
 
-	def __init__(self, gene, cool_time=1):
+	def __init__(self, gene, cool_time=1,name='EvolutionMachine'):
 		super().__init__(gene=gene)
-		self.name='EvolutionMachine'
+		self.name=name
 		self.TICK_COOLTIME = cool_time
 
 	#overriding.
 	def instantiate(self):
 		#real instantiation using self.gene
-		pass
+		self.model = self.gene
+		
 
 	#overriding.
 	def feedForward(self, input, tick):
+		board,curX,curY,pieces = input
+		refined_board = EvolutionMachine.refine_board(board)
+		rendered_board = EvolutionMachine.render_piece(curX,curY,pieces[0])
+		refined_board = refined_board + rendered_board
+		#flattened board with length of 81.
+		flattened_board = [item for sublist in refined_board for item in sublist]
+		flattened_board+=[1]
+
+		#hidden neurons with length of 20.
+		hidden_neurons = [0 for i in range(20)]
+
+		#output neurons with length of 5.
+		output_neurons = [0 for i in range(5)]
+		
+		# two list of tuples.
+		A_synapses, B_synapses = self.model
+
+		# first level feed forward.
+		for a_synapse in A_synapses:
+			start, end, weight = a_synapse
+			if flattened_board[start]:
+				hidden_neurons[end] += weight
+
+		# second level feed forward.
+		for b_synapse in B_synapses:
+			start, end, weight = b_synapse
+			if hidden_neurons[start]>0:
+				output_neurons[end] += hidden_neurons[start] * weight
+
+		output = tuple([1 if neuron>0 else 0 for neuron in output_neurons])
+		return output
 		#output must be in form (LEFT, RIGHT, DOWN, UP, SPACE)
-		return (0,0,0,0,1)
+
+	@staticmethod
+	def refine_board(board):
+		top_line = 0
+		for i in reversed(range(Board.BoardHeight,3)):
+			line = board[i]
+			is_any_block = any(line)
+			if is_any_block:
+				top_line=i-3
+				break
+
+		refined_board=board[top_line:top_line+4]
+		return refined_board
+
+	@staticmethod
+	def render_piece(curX,curY,curPiece):
+		table = list()
+		for i in range(4):
+			table.append([0,0,0,0,0,0,0,0,0,0])
+		minY = curPiece.minY()
+		for coord in curPiece.coords:
+			relX,relY = coord
+			Y = relY-minY
+			X = relX+curX
+			table[Y][X] = 1
+		return table
+
+
+	def generate_genes(pop_per_gen):
+		result = []
+
+		for i in range(pop_per_gen):
+			#1. randomly generate A_level synapses
+			num_of_syn = r.randint(24,36)
+			gene_a=[]
+			while len(gene_a) != num_of_syn:
+				start = r.randint(0,EvolutionMachine.INPUT_NEURON_NUM-1)
+				end = r.randint(0,EvolutionMachine.HIDDEN_NEURON_NUM-1)
+				weight = 1 if r.getrandbits(1) else -1
+				synapse = (start,end,weight)
+				for other_synapse in gene_a:
+					if other_synapse[0:2] == synapse[0:2]:
+						continue
+				gene_a.append(synapse)
+
+			#2. randomly generate B_level synapses
+			num_of_syn = r.randint(12,24)
+			gene_b=[]
+			while len(gene_b) != num_of_syn:
+				start = r.randint(0,EvolutionMachine.HIDDEN_NEURON_NUM-1)
+				end = r.randint(0,EvolutionMachine.OUTPUT_NEURON_NUM-1)
+				weight = 1 if r.getrandbits(1) else -1
+				synapse = (start,end,weight)
+				for other_synapse in gene_b:
+					if other_synapse[0:2] == synapse[0:2]:
+						continue
+				gene_b.append(synapse)
+
+			newgene=(gene_a,gene_b)
+			result.append(newgene)
+		return result
+
+	def make_offsprings(parent_genes, pop_per_gen):
+		
+		num_of_parents = len(parent_genes)
+		while len(parent_genes) != pop_per_gen:
+			mother = r.choice(parent_genes)
+			father = r.choice(parent_genes)
+
+			A_syn_m, B_syn_m = mother
+			A_syn_f, B_syn_f = father
+
+			#1. average A_level synapses
+			num_of_A = (len(A_syn_m) + len(A_syn_f)) // 2
+			gene_a=[]
+			A_syn_pool = A_syn_m+A_syn_f
+			while len(gene_a) != num_of_A:				
+				synapse = r.choice(A_syn_pool)
+				for other_synapse in gene_a:
+					if other_synapse[0:2] == synapse[0:2]:
+						continue
+				gene_a.append(synapse)
+
+			#2. average B_level synapses
+			num_of_B = (len(B_syn_m) + len(B_syn_f)) // 2
+			gene_b=[]
+			B_syn_pool = B_syn_m+B_syn_f
+			while len(gene_b) != num_of_B:				
+				synapse = r.choice(B_syn_pool)
+				for other_synapse in gene_b:
+					if other_synapse[0:2] == synapse[0:2]:
+						continue
+				gene_b.append(synapse)
+
+			#3. make mutation on A.
+			# delete [0,4] weights in A_level and insert another [0,4] weights.
+			delete_a_num = r.randint(0,4)
+			if len(gene_a) < 10:
+				delete_a_num = 0
+			for i in range(delete_a_num):
+				gene_a.remove(r.choice(gene_a))
+
+			insert_a_num = r.randint(0,4)
+			target_a_num = len(gene_a) + insert_a_num
+
+			while len(gene_a) != target_a_num:
+				start = r.randint(0,EvolutionMachine.INPUT_NEURON_NUM-1)
+				end = r.randint(0,EvolutionMachine.HIDDEN_NEURON_NUM-1)
+				weight = 1 if r.getrandbits(1) else -1
+				synapse = (start,end,weight)
+				for other_synapse in gene_a:
+					if other_synapse[0:2] == synapse[0:2]:
+						continue
+				gene_a.append(synapse)
+
+			# delete [0,2] weights in B_level and insert another [0,2] weights.
+			delete_b_num = r.randint(0,4)
+			if len(gene_b) < 6:
+				delete_b_num=0
+			for i in range(delete_a_num):
+				gene_b.remove(r.choice(gene_b))
+
+			insert_b_num = r.randint(0,4)
+			target_b_num = len(gene_b) + insert_b_num
+
+			while len(gene_b) != target_b_num:
+				start = r.randint(0,EvolutionMachine.HIDDEN_NEURON_NUM-1)
+				end = r.randint(0,EvolutionMachine.OUTPUT_NEURON_NUM-1)
+				weight = 1 if r.getrandbits(1) else -1
+				synapse = (start,end,weight)
+				for other_synapse in gene_b:
+					if other_synapse[0:2] == synapse[0:2]:
+						continue
+				gene_b.append(synapse)
+
+
+			parent_genes.append((gene_a,gene_b))
+
+		return parent_genes
+
 
 class NeuralNetMachine(Machine):
 	pass

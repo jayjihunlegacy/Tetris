@@ -2,16 +2,21 @@
 import random
 import datetime
 import pickle
+import time
 class Tetris(wx.Frame):
 	def __init__(self):
 		wx.Frame.__init__(self, None, title='Tetris', size=(360, 760))
 
-	def initFrame(self,mode,inputFile=None,inputMachine=None,maxTick=None):
+	def initFrame(self,mode,name=None,inputFile=None,inputMachine=None,maxTick=None):
 		'''
 		initialize frame.
 		'''
 		#1. create statusbar and initialize.
-		self.statusbar = self.CreateStatusBar()
+		try:
+			self.statusbar
+		except:
+			self.statusbar = self.CreateStatusBar()
+		
 		self.statusbar.SetStatusText('0')
 
 		#2. create board and start it.
@@ -25,6 +30,8 @@ class Tetris(wx.Frame):
 			self.board = Train_Board(self, inputMachine, maxTick)
 		else:
 			print('Invalid mode')
+		if name is not None:
+			self.name = name
 		self.board.SetFocus()
 		self.Center()
 		self.Show(True)
@@ -240,6 +247,7 @@ class Board(wx.Panel):
 		self.next5Piece.setShape(self.newPiece())
 		self.clearBoard()
 		self.timer.Start(1)
+		self.nextpiece()
 
 	def pause(self):
 		'''
@@ -500,22 +508,25 @@ class Board(wx.Panel):
 		self.timer.Stop()
 		self.isStarted = False
 		self.isOver = True
-		print('Game over. Score :',self.numLinesRemoved)
+		if self.verbose:
+			print('Game over. Score :',self.numLinesRemoved)
 		statusbar = self.GetParent().statusbar
 		statusbar.SetStatusText('Game Over')
-		self.save_history()
+		if self.numLinesRemoved!=0:
+			self.save_history()
 
 
 	def save_history(self):
 		now = datetime.datetime.now()
 		time_string = str(now).replace(' ','_').replace('.',':').replace(':','-')
 		filename = self.name+'_'+str(self.numLinesRemoved)+'_'+time_string+'.sav'
-		folder = 'C:/Tetris/'
+		folder = 'E:/Tetris/'
 		full=folder+filename
 		with open(full, 'wb') as f:
 			pickle.dump(self.keys,f)
 			pickle.dump(self.pieces,f)
-		print('Saved')
+		if self.verbose:
+			print('Saved')
 
 
 class Human_Board(Board):
@@ -648,7 +659,7 @@ class Train_Board(Board):
 		super().__init__(parent,maxTick=maxTick)
 		self.name = inputMachine.name
 		self.verbose=False
-		self.visualize= False
+		self.visualize=False
 
 	def initBoard_specific(self):
 		pass
@@ -678,9 +689,10 @@ class Train_Board(Board):
 		self.next3Piece.setShape(self.newPiece())
 		self.next4Piece.setShape(self.newPiece())
 		self.next5Piece.setShape(self.newPiece())
+		self.nextpiece()
 		while True:
 			self.OnTimer(None)
 			if self.isOver:
 				break
-		print("Ticks :",self.ticks)
+		#print("Ticks :",self.ticks)
 		return self.numLinesRemoved

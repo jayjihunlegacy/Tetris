@@ -22,7 +22,7 @@ def train_machine():
 
 
 def play_history(filename):
-	folder='C:/Tetris/'
+	folder='E:/Tetris/'
 	full = folder+filename
 	app = wx.App()
 	tetris = Tetris()
@@ -36,27 +36,28 @@ def human_play():
 	app.MainLoop()
 
 def evolution_train():
-	max_generation = 10
-	population_per_generation = 16
-	selection_per_population = 4
+	max_generation = 100
+	population_per_generation = 64
+	selection_per_population = 16
 
-	app = wx.App()
-	machines = list()
-
-	#1. generate adam and eve.
-	#2. 
-
+	
+	#machines = list()
+	
 	#1. generate initial population
 	genes = EvolutionMachine.generate_genes(population_per_generation)
-
+	app = wx.App()
+	tetris = Tetris()
 	for generation in range(1,max_generation+1):
 		fitnesses = []
 		machines = []
 		#2. measure fitnesses
-		for gene in genes:
-			machine = EvolutionMachine(gene)
-			tetris = Tetris()
-			score = tetris.initFrame('Train', inputMachine = machine, maxTick = 1000)
+		for idx, gene in enumerate(genes):
+			name = 'Evo_G'+str(generation)+'_#'+str(idx+1)
+			
+			machine = EvolutionMachine(gene,name=name)
+			
+			
+			score = tetris.initFrame('Train',name=name, inputMachine = machine, maxTick = 1000)
 			fitnesses.append(score)
 
 		#3. select some good genes
@@ -73,7 +74,7 @@ def evolution_train():
 
 def main():
 	#human_play()
-	#play_history('DeterministicMachine_92_2016-05-29_15-11-08-830112.sav')
+	#play_history('Evo_G53_#19_0_2016-05-30_01-01-34-770212.sav')
 	#play_machine()
 	#train_machine()
 	evolution_train()
