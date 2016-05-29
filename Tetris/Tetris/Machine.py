@@ -1,6 +1,5 @@
 ﻿import random as r
 from TetrisCore import *
-import copy
 class Machine(object):
 	def __init__(self, gene=None):
 		self.gene = gene
@@ -114,35 +113,31 @@ class DeterministicMachine(Machine):
 			return (0,0,0,1,0)
 
 		if self.aimPosition is None:
-			board = input[0]
-			
-			curCoord=input[1:3]
-			curPiece = input[3]
-			
-			self.dummyboard.board=board
-			self.dummyboard.curX=input[1]
-			self.dummyboard.curY=input[2]
-			self.dummyboard.curPiece=copy.deepcopy(input[3][0])
+			self.dummyboard.origboard = input[0]
+			self.dummyboard.origX = input[1]
+			self.dummyboard.origY = input[2]
+			self.dummyboard.origpieces = tuple()
+			self.dummyboard.origpieces += (input[3][0].shape(),)
+			self.dummyboard.origpieces += (input[3][1].shape(),)
+			self.dummyboard.origpieces += (input[3][2].shape(),)
+			self.dummyboard.origpieces += (input[3][3].shape(),)
+			self.dummyboard.origpieces += (input[3][4].shape(),)
+			self.dummyboard.origpieces += (input[3][5].shape(),)
 		
 			# generate possible scenarios.
 			scenarios = self.generate_scenarios()
 
 			# digitize scenarios.
-			scenarios = [Machine.digitize(scenario) for scenario in scenarios]
+			#scenarios = [Machine.digitize(scenario) for scenario in scenarios]
 
 			# evaluate the scenarios and pick the best.
-			scores=list()
-			i=0
 			scores = [self.evaluate_scenario(scenario) for scenario in scenarios]	
 			
-			#print(self.aims)
 			max_scenario_index = scores.index(max(scores))
 			
 			# set aimPosition according the max_scenario.
-			self.aimPosition = copy.deepcopy(self.aims[max_scenario_index])
+			self.aimPosition = [self.aims[max_scenario_index][0], self.aims[max_scenario_index][1]]
 			print("Aim Position Set!!:",self.aimPosition)
-			#print("Scenario index : %i, score : "%(max_scenario_index,),scores[max_scenario_index])
-			#print("Scenario :")
 
 		if tick % self.TICK_COOLTIME == 0:
 			# try to move to that aimPosition.
@@ -163,18 +158,31 @@ class DeterministicMachine(Machine):
 			return (0,0,0,0,1)
 		return (0,0,0,0,0)
 
+	def reset_dummyboard(self):
+		for i in range(Board.BoardHeight):
+			for j in range(Board.BoardWidth):
+				self.dummyboard.board[i][j] = self.dummyboard.origboard[i][j]
+		self.dummyboard.curX = self.dummyboard.origX
+		self.dummyboard.curY = self.dummyboard.origY
+		self.dummyboard.curPiece.setShape(self.dummyboard.origpieces[0])
+		self.dummyboard.nextPiece.setShape(self.dummyboard.origpieces[1])
+		self.dummyboard.next2Piece.setShape(self.dummyboard.origpieces[2])
+		self.dummyboard.next3Piece.setShape(self.dummyboard.origpieces[3])
+		self.dummyboard.next4Piece.setShape(self.dummyboard.origpieces[4])
+		self.dummyboard.next5Piece.setShape(self.dummyboard.origpieces[5])
+
 	def generate_scenarios(self):
 		scenarios=list()
 		for instruction in self.instructions:
-			board=copy.deepcopy(self.dummyboard)
+			self.reset_dummyboard()
 			results = list()
 			for cmd in instruction:
 				if cmd=='U':
-					results.append(board.perform_valid_key('UP', isstr=True, verbose=False))
+					results.append(self.dummyboard.perform_valid_key('UP', isstr=True, verbose=False))
 				elif cmd=='L':
-					results.append(board.perform_valid_key('LEFT', isstr=True, verbose=False))
+					results.append(self.dummyboard.perform_valid_key('LEFT', isstr=True, verbose=False))
 				elif cmd=='R':
-					results.append(board.perform_valid_key('RIGHT', isstr=True, verbose=False))
+					results.append(self.dummyboard.perform_valid_key('RIGHT', isstr=True, verbose=False))
 				else:
 					print('INVALID cmd :',cmd)
 				
@@ -182,8 +190,13 @@ class DeterministicMachine(Machine):
 			if not ispossible:
 				scenarios.append(None)
 			else:
-				board.dropDown()
-				result = copy.deepcopy(board.board)
+				self.dummyboard.dropDown()
+				result=list()
+				for i in range(Board.BoardHeight):
+					row = list()
+					for j in range(Board.BoardWidth):
+						row.append(1 if self.dummyboard.board[i][j] else 0)
+					result.append(row)
 				scenarios.append(result)
 		return scenarios
 

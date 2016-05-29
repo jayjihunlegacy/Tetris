@@ -37,7 +37,7 @@ def human_play():
 def main():
 	#human_play()
 	#play_history('DeterministicMachine_92_2016-05-29_15-11-08-830112.sav')
-	#play_machine()
-	train_machine()
+	play_machine()
+	#train_machine()
 if __name__=='__main__':
 	main()

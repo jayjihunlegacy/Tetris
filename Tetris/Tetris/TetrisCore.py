@@ -147,6 +147,9 @@ class Board(wx.Panel):
 	ID_TIMER = 1
 
 	def __init__(self, parent, dummy=False, maxTick=-1):
+		self.isdummy=dummy
+		self.maxTick=maxTick
+
 		if not dummy:
 			wx.Panel.__init__(self, parent, style=wx.WANTS_CHARS)
 			self.name = 'Noname'
@@ -155,12 +158,11 @@ class Board(wx.Panel):
 			self.visualize=True
 		else:
 			self.name = 'Dummy'
-			self.numLinesRemoved=0
+			self.initBoard()
 			self.verbose=False
 			self.visualize=False
 
-		self.isdummy=dummy
-		self.maxTick=maxTick
+		
 
 	def initBoard(self):
 		'''
@@ -168,7 +170,8 @@ class Board(wx.Panel):
 		Called only at the start.
 		'''
 		#initiate timer for timer.
-		self.timer = wx.Timer(self, Board.ID_TIMER)
+		if not self.isdummy:
+			self.timer = wx.Timer(self, Board.ID_TIMER)
 		self.ticks=0
 
 		self.keys=[]
@@ -196,13 +199,14 @@ class Board(wx.Panel):
 		self.isOver = False
 
 		#5. bind event handlers.
-		self.Bind(wx.EVT_PAINT, self.OnPaint)
-		self.Bind(wx.EVT_TIMER, self.OnTimer, id=Board.ID_TIMER)
+		if not self.isdummy:
+			self.Bind(wx.EVT_PAINT, self.OnPaint)
+			self.Bind(wx.EVT_TIMER, self.OnTimer, id=Board.ID_TIMER)
 		
 		self.clearBoard()
 
-		
-		self.initBoard_specific()
+		if not self.isdummy:
+			self.initBoard_specific()
 		
 
 	def shapeAt(self, x,y):
@@ -236,7 +240,7 @@ class Board(wx.Panel):
 		self.next4Piece.setShape(self.newPiece())
 		self.next5Piece.setShape(self.newPiece())
 		self.clearBoard()
-		self.timer.Start(10)
+		self.timer.Start(1)
 
 	def pause(self):
 		'''
@@ -254,7 +258,7 @@ class Board(wx.Panel):
 			self.timer.Stop()
 			statusbar.SetStatusText('paused')
 		else:
-			self.timer.Start(10)
+			self.timer.Start(1)
 			statusbar.SetStatusText(str(self.numLinesRemoved))
 
 		# refresh.
@@ -323,8 +327,7 @@ class Board(wx.Panel):
 		'''
 		
 		self.ticks+=1
-		a=datetime.datetime.now()
-		print(a.microsecond//1000)
+		
 		if self.ticks == self.maxTick:
 			self.game_over()
 
