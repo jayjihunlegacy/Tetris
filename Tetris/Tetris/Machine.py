@@ -68,6 +68,7 @@ class DeterministicMachine(Machine):
 		self.TICK_COOLTIME = cool_time
 		self.aimPosition = None
 		self.dummyboard=Board(None, dummy=True)
+		self.scenarios_set = list()
 		pass
 
 	#overriding.
@@ -82,11 +83,11 @@ class DeterministicMachine(Machine):
 		self.w = list(self.gene)
 
 		self.aims=list()
-		self.aims.append([0,0])
 		for rotate in range(4):
+			self.aims.append([0,rotate])
 			for left in range(1,7):
 				self.aims.append([left,rotate])
-			for right in range(1,7):
+			for right in range(1,4):
 				self.aims.append([-right,rotate])
 
 		self.instructions=list()
@@ -133,7 +134,8 @@ class DeterministicMachine(Machine):
 			scores=list()
 			i=0
 			scores = [self.evaluate_scenario(scenario) for scenario in scenarios]	
-			#print(scores)
+			self.scenarios_set.append([1 if (score==-float('inf')) else 0 for score in scores])
+			
 			#print(self.aims)
 			max_scenario_index = scores.index(max(scores))
 			

@@ -146,7 +146,7 @@ class Board(wx.Panel):
 	keycodes = [wx.WXK_LEFT, wx.WXK_RIGHT, wx.WXK_UP, wx.WXK_DOWN, wx.WXK_SPACE]
 	ID_TIMER = 1
 
-	def __init__(self, parent, dummy=False):		
+	def __init__(self, parent, dummy=False, maxTick=-1):
 		if not dummy:
 			wx.Panel.__init__(self, parent, style=wx.WANTS_CHARS)
 			self.name = 'Noname'
@@ -160,6 +160,7 @@ class Board(wx.Panel):
 			self.visualize=False
 
 		self.isdummy=dummy
+		self.maxTick=maxTick
 
 	def initBoard(self):
 		'''
@@ -311,6 +312,10 @@ class Board(wx.Panel):
 		'''
 		
 		self.ticks+=1
+
+		if self.ticks == self.maxTick:
+			self.game_over()
+
 		#when tick is enough for Linedown, 
 		if self.ticks % Board.TICKS_FOR_LINEDOWN == 0:
 			self.oneLineDown()
@@ -478,6 +483,7 @@ class Board(wx.Panel):
 		statusbar.SetStatusText('Game Over')
 		self.save_history()
 
+
 	def save_history(self):
 		now = datetime.datetime.now()
 		time_string = str(now).replace(' ','_').replace('.',':').replace(':','-')
@@ -625,11 +631,10 @@ class Machine_Board(Board):
 class Train_Board(Board):
 	def __init__(self, parent,inputMachine, maxTick):
 		self.machine = inputMachine
-		super().__init__(parent)
+		super().__init__(parent,maxTick=maxTick)
 		self.name = inputMachine.name
 		self.verbose=False
 		self.visualize= False
-		self.maxTick=maxTick
 
 	def initBoard_specific(self):
 		pass
@@ -639,10 +644,6 @@ class Train_Board(Board):
 		in every tick, feedforward through the machine, and get the result.
 		apply the result.
 		'''
-		if self.ticks==self.maxTick:
-			print('Game over due to max tick.')
-			self.game_over()
-
 
 		#output must be in form (LEFT, RIGHT, UP, DOWN, SPACE)
 		input = (self.board, self.curX, self.curY, self.curPiece)
