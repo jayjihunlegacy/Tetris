@@ -58,8 +58,6 @@ class RandomMachine(Machine):
 			return (0,0,0,0,0)
 
 
-
-
 class DeterministicMachine(Machine):
 	def __init__(self, cool_time=1, gene=None):
 		super().__init__(gene=gene)
@@ -232,7 +230,25 @@ class DeterministicMachine(Machine):
 		return dot_product
 
 class EvolutionMachine(Machine):
-	pass
+	def generate_genes(pop_per_gen):
+		return [None, None]
+	def make_offsprings(parent_genes, pop_per_gen):
+		return [None, None]
+
+	def __init__(self, gene, cool_time=1):
+		super().__init__(gene=gene)
+		self.name='EvolutionMachine'
+		self.TICK_COOLTIME = cool_time
+
+	#overriding.
+	def instantiate(self):
+		#real instantiation using self.gene
+		pass
+
+	#overriding.
+	def feedForward(self, input, tick):
+		#output must be in form (LEFT, RIGHT, DOWN, UP, SPACE)
+		return (0,0,0,0,1)
 
 class NeuralNetMachine(Machine):
 	pass

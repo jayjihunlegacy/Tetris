@@ -2,7 +2,6 @@
 import random
 import datetime
 import pickle
-import copy
 class Tetris(wx.Frame):
 	def __init__(self):
 		wx.Frame.__init__(self, None, title='Tetris', size=(360, 760))
