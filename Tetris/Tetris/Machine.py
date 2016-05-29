@@ -68,8 +68,6 @@ class DeterministicMachine(Machine):
 		self.TICK_COOLTIME = cool_time
 		self.aimPosition = None
 		self.dummyboard=Board(None, dummy=True)
-		self.scenarios_set = list()
-		pass
 
 	#overriding.
 	def instantiate(self):
@@ -110,7 +108,9 @@ class DeterministicMachine(Machine):
 		if not have, make aimPosition, and try.
 		'''
 		#output must be in form (LEFT, RIGHT, UP, DOWN, SPACE)
-		if input[3].pieceShape == Tetrominoes.TShape and input[2]==Board.BoardHeight-1:
+
+		#input = (board, curX, curY, pieces)
+		if input[3][0].pieceShape == Tetrominoes.TShape and input[2]==Board.BoardHeight-1:
 			return (0,0,0,1,0)
 
 		if self.aimPosition is None:
@@ -118,11 +118,11 @@ class DeterministicMachine(Machine):
 			
 			curCoord=input[1:3]
 			curPiece = input[3]
-
+			
 			self.dummyboard.board=board
 			self.dummyboard.curX=input[1]
 			self.dummyboard.curY=input[2]
-			self.dummyboard.curPiece=copy.deepcopy(input[3])
+			self.dummyboard.curPiece=copy.deepcopy(input[3][0])
 		
 			# generate possible scenarios.
 			scenarios = self.generate_scenarios()
@@ -134,7 +134,6 @@ class DeterministicMachine(Machine):
 			scores=list()
 			i=0
 			scores = [self.evaluate_scenario(scenario) for scenario in scenarios]	
-			self.scenarios_set.append([1 if (score==-float('inf')) else 0 for score in scores])
 			
 			#print(self.aims)
 			max_scenario_index = scores.index(max(scores))

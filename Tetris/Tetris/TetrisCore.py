@@ -2,7 +2,7 @@
 import random
 import datetime
 import pickle
-
+import copy
 class Tetris(wx.Frame):
 	def __init__(self):
 		wx.Frame.__init__(self, None, title='Tetris', size=(360, 760))
@@ -171,10 +171,17 @@ class Board(wx.Panel):
 		self.timer = wx.Timer(self, Board.ID_TIMER)
 		self.ticks=0
 
+		self.keys=[]
+		self.pieces=[]
+
 		#1. pointers to Current Piece and the next Piece
 		self.curPiece = Shape()
 		self.nextPiece = Shape()
-
+		self.next2Piece = Shape()
+		self.next3Piece = Shape()
+		self.next4Piece = Shape()
+		self.next5Piece = Shape()
+		
 		#2. coordinate of current Piece (center coordinate of it)
 		self.curX = 0
 		self.curY = 0
@@ -194,8 +201,7 @@ class Board(wx.Panel):
 		
 		self.clearBoard()
 
-		self.keys=[]
-		self.pieces=[]
+		
 		self.initBoard_specific()
 		
 
@@ -222,10 +228,15 @@ class Board(wx.Panel):
 		print('Start!')
 		self.isStarted=True
 		self.numLinesRemoved=0
-		self.clearBoard()
+		
 
-		self.newPiece()
-		self.timer.Start(1)
+		self.nextPiece.setShape(self.newPiece())
+		self.next2Piece.setShape(self.newPiece())
+		self.next3Piece.setShape(self.newPiece())
+		self.next4Piece.setShape(self.newPiece())
+		self.next5Piece.setShape(self.newPiece())
+		self.clearBoard()
+		self.timer.Start(10)
 
 	def pause(self):
 		'''
@@ -243,7 +254,7 @@ class Board(wx.Panel):
 			self.timer.Stop()
 			statusbar.SetStatusText('paused')
 		else:
-			self.timer.Start(1)
+			self.timer.Start(10)
 			statusbar.SetStatusText(str(self.numLinesRemoved))
 
 		# refresh.
@@ -312,7 +323,8 @@ class Board(wx.Panel):
 		'''
 		
 		self.ticks+=1
-
+		a=datetime.datetime.now()
+		print(a.microsecond//1000)
 		if self.ticks == self.maxTick:
 			self.game_over()
 
@@ -361,7 +373,7 @@ class Board(wx.Panel):
 
 		#spawn new piece
 		if not self.isdummy:
-			self.newPiece()
+			self.nextpiece()
 
 	def removeFullLines(self):
 		'''
@@ -401,16 +413,24 @@ class Board(wx.Panel):
 		'''
 		spawn new piece.
 		'''
-
-		self.curPiece = self.nextPiece	
-
-		self.nextPiece.setRandomShape()
-		shape = self.nextPiece.shape()
-		self.pieces.append((self.ticks,shape))
+		#print("NEW PIECE CALLED",end=' ')
+		newshape = random.randint(1,7)
 		shape_str = ['Noshape', 'Z-shape', 'S-shape', '|-shape', 'T-shape', 'Square', 'L-shape', "L'-shape"]
-		if self.verbose:
-			print('Next Shape :',shape_str[shape])
+		#print("PIECE :",shape_str[newshape])
 
+		self.pieces.append((self.ticks,newshape))
+		
+		return newshape
+
+
+	def nextpiece(self):		
+		self.curPiece, self.nextPiece, self.next2Piece, self.next3Piece, self.next4Piece = \
+			(self.nextPiece, self.next2Piece, self.next3Piece, self.next4Piece, self.next5Piece)
+		self.next5Piece = Shape()
+		newShape = self.newPiece()
+		self.next5Piece.setShape(newShape)
+
+		
 		self.curX = Board.BoardWidth//2 + 1
 		self.curY = Board.BoardHeight - 1 + self.curPiece.minY()
 
@@ -540,11 +560,6 @@ class Human_Board(Board):
 
 	#overriding.
 	def OnTimer_specific(self, event):
-		p=self.curPiece
-		tup=(p.maxX(),p.minX(),p.maxY(),p.minY())
-		#print(tup)
-		print(p.pieceShape)
-		print(self.curX, self.curY)
 		pass
 	
 class Save_Board(Board):
@@ -579,23 +594,18 @@ class Save_Board(Board):
 
 	#overriding.
 	def newPiece(self):
-		self.curPiece = self.nextPiece	
+		
 		data=self.pieces[0]
 		tick, piece = data
 		if self.ticks == tick:
-			self.nextPiece.setShape(piece)
 			self.pieces = self.pieces[1:]
+			return piece
 		elif self.ticks > tick:
 			print('Skipped shape.')
 			print('Current tick : %i, Data : (%i,%i)'%(self.ticks,tick,piece))
 			self.pieces = self.pieces[1:]
+			return piece
 
-		self.curX = Board.BoardWidth//2 + 1
-		self.curY = Board.BoardHeight - 1 + self.curPiece.minY()
-
-		#when cannot place new piece, GAME OVER !
-		if not self.tryMove(self.curPiece, self.curX, self.curY):
-			self.game_over()
 
 	#overriding.
 	def save_history(self):
@@ -617,7 +627,9 @@ class Machine_Board(Board):
 		apply the result.
 		'''
 		#output must be in form (LEFT, RIGHT, UP, DOWN, SPACE)
-		input = (self.board, self.curX, self.curY, self.curPiece)
+
+		pieces = (self.curPiece, self.nextPiece, self.next2Piece, self.next3Piece, self.next4Piece, self.next5Piece)
+		input = (self.board, self.curX, self.curY, pieces)
 		output = self.machine.feedForward(input, self.ticks)
 		if output is None:
 			return
@@ -646,7 +658,8 @@ class Train_Board(Board):
 		'''
 
 		#output must be in form (LEFT, RIGHT, UP, DOWN, SPACE)
-		input = (self.board, self.curX, self.curY, self.curPiece)
+		pieces = (self.curPiece, self.nextPiece, self.next2Piece, self.next3Piece, self.next4Piece, self.next5Piece)
+		input = (self.board, self.curX, self.curY, pieces)
 		output = self.machine.feedForward(input, self.ticks)
 				
 		for i in range(5):
@@ -658,7 +671,11 @@ class Train_Board(Board):
 		self.isStarted=True
 		self.numLinesRemoved = 0
 		self.clearBoard()
-		self.newPiece()
+		self.nextPiece.setShape(self.newPiece())
+		self.next2Piece.setShape(self.newPiece())
+		self.next3Piece.setShape(self.newPiece())
+		self.next4Piece.setShape(self.newPiece())
+		self.next5Piece.setShape(self.newPiece())
 		while True:
 			self.OnTimer(None)
 			if self.isOver:
