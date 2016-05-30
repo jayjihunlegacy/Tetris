@@ -382,6 +382,9 @@ class EvolutionMachine(Machine):
 				gene_a.remove(r.choice(gene_a))
 
 			insert_a_num = r.randint(0,4)
+			if len(gene_a) > 1400:
+				insert_a_num = 0
+
 			target_a_num = len(gene_a) + insert_a_num
 
 			while len(gene_a) != target_a_num:
@@ -402,6 +405,9 @@ class EvolutionMachine(Machine):
 				gene_b.remove(r.choice(gene_b))
 
 			insert_b_num = r.randint(0,4)
+			if len(gene_b) > 90:
+				insert_b_num = 0
+
 			target_b_num = len(gene_b) + insert_b_num
 
 			while len(gene_b) != target_b_num:

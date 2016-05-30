@@ -525,6 +525,11 @@ class Board(wx.Panel):
 		with open(full, 'wb') as f:
 			pickle.dump(self.keys,f)
 			pickle.dump(self.pieces,f)
+		filename = self.name+'_'+str(self.numLinesRemoved)+'_'+time_string+'.model'
+		folder = 'D:/Dropbox/'
+		full = folder+filename
+		with open(full, 'wb') as f:
+			pickle.dump(self.machine.gene, f)
 		if self.verbose:
 			print('Saved')
 

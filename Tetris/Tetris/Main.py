@@ -36,7 +36,7 @@ def human_play():
 	app.MainLoop()
 
 def evolution_train():
-	max_generation = 100
+	max_generation = -1
 	population_per_generation = 64
 	selection_per_population = 16
 
@@ -47,7 +47,9 @@ def evolution_train():
 	genes = EvolutionMachine.generate_genes(population_per_generation)
 	app = wx.App()
 	tetris = Tetris()
-	for generation in range(1,max_generation+1):
+	generation = 0
+	while generation != max_generation:
+		generation+=1
 		fitnesses = []
 		machines = []
 		#2. measure fitnesses
