@@ -515,23 +515,20 @@ class Board(wx.Panel):
 		statusbar.SetStatusText('Game Over')
 		if self.numLinesRemoved!=0:
 			self.save_history()
-			subject = 'Genetic Algorithm Notification'
-			body = 'Genome found.\nLines cleared : '+str(self.numLinesRemoved)
-			body+='\nName : '+self.name
-			sendEmail(subject,body)
+			
 
 
 	def save_history(self):
 		now = datetime.datetime.now()
 		time_string = str(now).replace(' ','_').replace('.',':').replace(':','-')
 		filename = self.name+'_'+str(self.numLinesRemoved)+'_'+time_string+'.sav'
-		folder = 'E:/Tetris/'
+		folder = 'D:/Dropbox/Tetris/'
 		full=folder+filename
 		with open(full, 'wb') as f:
 			pickle.dump(self.keys,f)
 			pickle.dump(self.pieces,f)
 		filename = self.name+'_'+str(self.numLinesRemoved)+'_'+time_string+'.model'
-		folder = 'D:/Dropbox/'
+		folder = 'D:/Dropbox/Tetris/'
 		full = folder+filename
 		with open(full, 'wb') as f:
 			pickle.dump(self.machine.gene, f)

@@ -37,9 +37,9 @@ def human_play():
 
 def evolution_train():
 	max_generation = -1
-	population_per_generation = 64
-	selection_per_population = 16
-
+	population_per_generation = 128
+	selection_per_population = 32
+	anyFound=False
 	
 	#machines = list()
 	
@@ -65,8 +65,16 @@ def evolution_train():
 		#3. select some good genes
 		ranks=sorted(range(len(fitnesses)), key=lambda i:fitnesses[i], reverse=True)
 		indices = ranks[0:selection_per_population]
+		if max(fitnesses) == 0:
+			success_genes = random.sample(genes,selection_per_population)
+		else:
+			if not anyFound:
+				subject = 'Genetic Algorithm Notification'
+				body = 'Genome found.\n'
+				sendEmail(subject,body)
 
-		success_genes = [genes[index] for index in indices]
+			success_genes = [genes[index] for index in indices]
+			anyFound=True
 		
 		print('Generation : %i. Best fitness : %i'%(generation,max(fitnesses)))
 

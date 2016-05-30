@@ -312,7 +312,7 @@ class EvolutionMachine(Machine):
 
 		for i in range(pop_per_gen):
 			#1. randomly generate A_level synapses
-			num_of_syn = r.randint(24,36)
+			num_of_syn = r.randint(36,72)
 			gene_a=[]
 			while len(gene_a) != num_of_syn:
 				start = r.randint(0,EvolutionMachine.INPUT_NEURON_NUM-1)
@@ -345,8 +345,8 @@ class EvolutionMachine(Machine):
 		
 		num_of_parents = len(parent_genes)
 		while len(parent_genes) != pop_per_gen:
-			mother = r.choice(parent_genes)
-			father = r.choice(parent_genes)
+			mother = r.choice(parent_genes[0:num_of_parents])
+			father = r.choice(parent_genes[0:num_of_parents])
 
 			A_syn_m, B_syn_m = mother
 			A_syn_f, B_syn_f = father
@@ -401,7 +401,7 @@ class EvolutionMachine(Machine):
 			delete_b_num = r.randint(0,4)
 			if len(gene_b) < 6:
 				delete_b_num=0
-			for i in range(delete_a_num):
+			for i in range(delete_b_num):
 				gene_b.remove(r.choice(gene_b))
 
 			insert_b_num = r.randint(0,4)
