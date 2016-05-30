@@ -3,6 +3,7 @@ import random
 import datetime
 import pickle
 import time
+from Mail import *
 class Tetris(wx.Frame):
 	def __init__(self):
 		wx.Frame.__init__(self, None, title='Tetris', size=(360, 760))
@@ -32,7 +33,7 @@ class Tetris(wx.Frame):
 			print('Invalid mode')
 		if name is not None:
 			self.name = name
-		self.board.SetFocus()
+		#self.board.SetFocus()
 		self.Center()
 		self.Show(True)
 		return self.board.start()
@@ -514,6 +515,10 @@ class Board(wx.Panel):
 		statusbar.SetStatusText('Game Over')
 		if self.numLinesRemoved!=0:
 			self.save_history()
+			subject = 'Genetic Algorithm Notification'
+			body = 'Genome found.\nLines cleared : '+str(self.numLinesRemoved)
+			body+='\nName : '+self.name
+			sendEmail(subject,body)
 
 
 	def save_history(self):
@@ -531,7 +536,8 @@ class Board(wx.Panel):
 		with open(full, 'wb') as f:
 			pickle.dump(self.machine.gene, f)
 		if self.verbose:
-			print('Saved')
+			print('Saved')	
+
 
 
 class Human_Board(Board):
