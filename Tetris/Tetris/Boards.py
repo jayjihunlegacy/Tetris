@@ -364,10 +364,13 @@ class Board(wx.Panel):
 			self.timer.Stop()
 		self.isStarted = False
 		self.isOver = True
+
 		if self.verbose:
 			print('Game over. Score :',self.numLinesRemoved)
-		statusbar = self.GetParent().statusbar
-		statusbar.SetStatusText('Game Over')
+
+		if not self.istrain:
+			statusbar = self.GetParent().statusbar
+			statusbar.SetStatusText('Game Over')
 
 		if not self.isdummy:
 			self.save_history()
