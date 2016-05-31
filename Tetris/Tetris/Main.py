@@ -1,6 +1,7 @@
-﻿from TetrisCore import *
+﻿import gc
+import wx
+from TetrisCore import *
 from Machine import *
-
 
 def play_machine():
 	app=wx.App()
@@ -48,7 +49,11 @@ def evolution_train():
 	app = wx.App()
 	tetris = Tetris()
 	generation = 0
+
+	machine = EvolutionMachine(None,None)
+
 	while generation != max_generation:
+		gc.collect()
 		generation+=1
 		fitnesses = []
 		machines = []
@@ -56,11 +61,13 @@ def evolution_train():
 		for idx, gene in enumerate(genes):
 			name = 'Evo_G'+str(generation)+'_#'+str(idx+1)
 			
-			machine = EvolutionMachine(gene,name=name)
-			
-			
+			#machine = EvolutionMachine(gene,name=name)
+			machine.gene = gene
+			machine.name = name
+			machine.instantiate()
 			score = tetris.initFrame('Train',name=name, inputMachine = machine, maxTick = 1000)
 			fitnesses.append(score)
+			
 
 		#3. select some good genes
 		ranks=sorted(range(len(fitnesses)), key=lambda i:fitnesses[i], reverse=True)
