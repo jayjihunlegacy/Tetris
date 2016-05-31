@@ -9,11 +9,12 @@ from Boards import *
 
 
 class Tetris(wx.Frame):
-	def __init__(self):
+	def __init__(self,mode, inputFile=None, inputMachine=None, maxTick=-1):
 		wx.Frame.__init__(self, None, title='Tetris', size=(360, 760))
 		self.statusbar = self.CreateStatusBar()
+		self.initFrame(mode=mode,inputFile=inputFile,inputMachine=inputMachine,maxTick=maxTick)
 
-	def initFrame(self,mode,name=None,inputFile=None,inputMachine=None,maxTick=None):
+	def initFrame(self,mode, inputFile=None,inputMachine=None,maxTick=-1):
 		'''
 		initialize frame.
 		'''
@@ -37,9 +38,11 @@ class Tetris(wx.Frame):
 
 		else:
 			print('Invalid mode')
-		if name is not None:
-			self.name = name
-		#self.board.SetFocus()
-		#self.Center()
-		#self.Show(True)
+		
+		if mode != 'Train':
+			self.board.SetFocus()
+			self.Center()
+			self.Show(True)
+
+	def start(self):
 		return self.board.start()

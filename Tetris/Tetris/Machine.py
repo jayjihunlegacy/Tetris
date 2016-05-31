@@ -4,9 +4,8 @@ class Machine(object):
 	def __init__(self, gene=None):
 		self.gene = gene
 		self.model = None
-		self.instantiate()
 		self.name = 'GeneralMachine'
-		pass
+		self.instantiate()
 
 	#for overriding.
 	def instantiate(self):
@@ -68,10 +67,9 @@ class DeterministicMachine(Machine):
 
 	#overriding.
 	def instantiate(self):
+		#if gene is None, randomly generate.
 		if self.gene is None:
 			self.gene = (-4, -1)
-			#if gene is None, randomly generate.
-			pass
 		#1. number of holes.
 		#2. height penalty sum.
 
@@ -231,8 +229,13 @@ class DeterministicMachine(Machine):
 
 class EvolutionMachine(Machine):
 	INPUT_NEURON_NUM = 81
-	HIDDEN_NEURON_NUM = 20
+	HIDDEN_NEURON_NUM = 40
 	OUTPUT_NEURON_NUM = 5
+
+	LEVEL_A_MIN_SYNAPSE = 200
+	LEVEL_A_MAX_SYNAPSE = 3000
+	LEVEL_B_MIN_SYNAPSE = 20
+	LEVEL_B_MAX_SYNAPSE = 180
 
 	def __init__(self, gene, cool_time=1,name='EvolutionMachine'):
 		super().__init__(gene=gene)
@@ -244,22 +247,20 @@ class EvolutionMachine(Machine):
 		#real instantiation using self.gene
 		self.model = self.gene
 		
-
 	#overriding.
 	def feedForward(self, input, tick):
+		
 		board,curX,curY,pieces = input
-		refined_board = EvolutionMachine.refine_board(board)
-		rendered_board = EvolutionMachine.render_piece(curX,curY,pieces[0])
-		refined_board = refined_board + rendered_board
+		refined_board = EvolutionMachine.refine_board(board,curX,curY,pieces[0])
 		#flattened board with length of 81.
 		flattened_board = [item for sublist in refined_board for item in sublist]
 		flattened_board+=[1]
 
-		#hidden neurons with length of 20.
-		hidden_neurons = [0 for i in range(20)]
+		#hidden neurons with length of 40.
+		hidden_neurons = [0 for i in range(EvolutionMachine.HIDDEN_NEURON_NUM)]
 
 		#output neurons with length of 5.
-		output_neurons = [0 for i in range(5)]
+		output_neurons = [0 for i in range(EvolutionMachine.OUTPUT_NEURON_NUM)]
 		
 		# two list of tuples.
 		A_synapses, B_synapses = self.model
@@ -277,11 +278,15 @@ class EvolutionMachine(Machine):
 				output_neurons[end] += hidden_neurons[start] * weight
 
 		output = tuple([1 if neuron>0 else 0 for neuron in output_neurons])
+		#print('Feed forward :',self.name)
+		#print('Output :',output)
+		#print('Tick :',tick)
 		return output
 		#output must be in form (LEFT, RIGHT, DOWN, UP, SPACE)
 
 	@staticmethod
-	def refine_board(board):
+	def refine_board(board,curX,curY,curPiece):
+		# 1. Take only 4 top lines of the board.
 		top_line = 0
 		for i in reversed(range(Board.BoardHeight,3)):
 			line = board[i]
@@ -291,10 +296,8 @@ class EvolutionMachine(Machine):
 				break
 
 		refined_board=board[top_line:top_line+4]
-		return refined_board
 
-	@staticmethod
-	def render_piece(curX,curY,curPiece):
+		# 2. Render current piece.
 		table = list()
 		for i in range(4):
 			table.append([0,0,0,0,0,0,0,0,0,0])
@@ -304,7 +307,7 @@ class EvolutionMachine(Machine):
 			Y = relY-minY
 			X = relX+curX
 			table[Y][X] = 1
-		return table
+		return refined_board+table
 
 
 	def generate_genes(pop_per_gen):
@@ -312,7 +315,7 @@ class EvolutionMachine(Machine):
 
 		for i in range(pop_per_gen):
 			#1. randomly generate A_level synapses
-			num_of_syn = r.randint(36,72)
+			num_of_syn = r.randint(500,700)
 			gene_a=[]
 			while len(gene_a) != num_of_syn:
 				start = r.randint(0,EvolutionMachine.INPUT_NEURON_NUM-1)
@@ -325,7 +328,7 @@ class EvolutionMachine(Machine):
 				gene_a.append(synapse)
 
 			#2. randomly generate B_level synapses
-			num_of_syn = r.randint(12,24)
+			num_of_syn = r.randint(60,100)
 			gene_b=[]
 			while len(gene_b) != num_of_syn:
 				start = r.randint(0,EvolutionMachine.HIDDEN_NEURON_NUM-1)
@@ -375,14 +378,14 @@ class EvolutionMachine(Machine):
 
 			#3. make mutation on A.
 			# delete [0,4] weights in A_level and insert another [0,4] weights.
-			delete_a_num = r.randint(0,4)
-			if len(gene_a) < 10:
+			delete_a_num = r.randint(0,10)
+			if len(gene_a) < EvolutionMachine.LEVEL_A_MIN_SYNAPSE:
 				delete_a_num = 0
 			for i in range(delete_a_num):
 				gene_a.remove(r.choice(gene_a))
 
-			insert_a_num = r.randint(0,4)
-			if len(gene_a) > 1400:
+			insert_a_num = r.randint(0,10)
+			if len(gene_a) > EvolutionMachine.LEVEL_A_MAX_SYNAPSE:
 				insert_a_num = 0
 
 			target_a_num = len(gene_a) + insert_a_num
@@ -398,14 +401,14 @@ class EvolutionMachine(Machine):
 				gene_a.append(synapse)
 
 			# delete [0,2] weights in B_level and insert another [0,2] weights.
-			delete_b_num = r.randint(0,4)
-			if len(gene_b) < 6:
+			delete_b_num = r.randint(0,5)
+			if len(gene_b) < EvolutionMachine.LEVEL_B_MIN_SYNAPSE:
 				delete_b_num=0
 			for i in range(delete_b_num):
 				gene_b.remove(r.choice(gene_b))
 
-			insert_b_num = r.randint(0,4)
-			if len(gene_b) > 90:
+			insert_b_num = r.randint(0,5)
+			if len(gene_b) > EvolutionMachine.LEVEL_B_MAX_SYNAPSE:
 				insert_b_num = 0
 
 			target_b_num = len(gene_b) + insert_b_num

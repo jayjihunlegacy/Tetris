@@ -1,5 +1,4 @@
 import wx
-#from TetrisCore import *
 from Shape import *
 class Board(wx.Panel):
 	BoardWidth=10
@@ -8,45 +7,51 @@ class Board(wx.Panel):
 	keycodes = [wx.WXK_LEFT, wx.WXK_RIGHT, wx.WXK_UP, wx.WXK_DOWN, wx.WXK_SPACE]
 	ID_TIMER = 1
 
+
 	def __init__(self, parent, dummy=False, maxTick=-1, train=False):
 		self.isdummy=dummy
 		self.maxTick=maxTick
-		self.train = train
+		self.istrain = train
+
+		# if dummy, don't make the window.
 		if not dummy:
 			wx.Panel.__init__(self, parent, style=wx.WANTS_CHARS)
-			self.name = 'Noname'
-			self.initBoard()
 			self.verbose=True
 			self.visualize=True
-		else:
-			self.name = 'Dummy'
-			self.initBoard()
+		else:			
 			self.verbose=False
 			self.visualize=False
 
-		
-
-	def initBoard(self):
-		'''
-		initialize board.
-		Called only at the start.
-		'''
-		#initiate timer for timer.
-		#print("init board")
-		if (not self.isdummy) and (not self.train):
+		# 1. initiate timer for timer.
+		if (not self.isdummy) and (not self.istrain):
 			self.timer = wx.Timer(self, Board.ID_TIMER)
-		self.ticks=0
 
-		self.keys=[]
-		self.pieces=[]
+		# 2. bind event handlers.
+		if (not self.isdummy) and (not self.istrain):
+			self.Bind(wx.EVT_PAINT, self.OnPaint)
+			self.Bind(wx.EVT_TIMER, self.OnTimer, id=Board.ID_TIMER)
 
-		#1. pointers to Current Piece and the next Piece
+		# 3. pointers to Current Piece and the next Piece
 		self.curPiece = Shape()
 		self.nextPiece = Shape()
 		self.next2Piece = Shape()
 		self.next3Piece = Shape()
 		self.next4Piece = Shape()
 		self.next5Piece = Shape()
+
+		# 4. initBoard()
+		self.initBoard()
+
+	def initBoard(self):
+		'''
+		initialize board.
+		Called only at the start.
+		'''
+		
+		self.ticks=0
+
+		self.keys=[]
+		self.pieces=[]
 		
 		#2. coordinate of current Piece (center coordinate of it)
 		self.curX = 0
@@ -60,11 +65,6 @@ class Board(wx.Panel):
 		self.isStarted = False
 		self.isPaused = False
 		self.isOver = False
-
-		#5. bind event handlers.
-		if (not self.isdummy) and (not self.train):
-			self.Bind(wx.EVT_PAINT, self.OnPaint)
-			self.Bind(wx.EVT_TIMER, self.OnTimer, id=Board.ID_TIMER)
 		
 		self.clearBoard()
 
@@ -360,7 +360,7 @@ class Board(wx.Panel):
 
 	def game_over(self):
 		self.curPiece.setShape(Tetrominoes.NoShape)
-		if (not self.isdummy) and (not self.train):
+		if (not self.isdummy) and (not self.istrain):
 			self.timer.Stop()
 		self.isStarted = False
 		self.isOver = True
@@ -368,25 +368,48 @@ class Board(wx.Panel):
 			print('Game over. Score :',self.numLinesRemoved)
 		statusbar = self.GetParent().statusbar
 		statusbar.SetStatusText('Game Over')
-		if self.numLinesRemoved!=0:
+
+		if not self.isdummy:
 			self.save_history()
 			
 
-
+	#overriding.
 	def save_history(self):
+		# 1. Determine filename.
+		if isinstance(self, Human_Board):
+			name = 'Human'
+		elif isinstance(self, Save_Board):
+			return
+		elif isinstance(self, Machine_Board):
+			name = self.machine.name
+		elif isinstance(self, Train_Board):
+			if self.numLinesRemoved==0:
+				return
+			else:
+				name=self.machine.name
+		# 2. Get time info.
 		now = datetime.datetime.now()
 		time_string = str(now).replace(' ','_').replace('.',':').replace(':','-')
-		filename = self.name+'_'+str(self.numLinesRemoved)+'_'+time_string+'.sav'
-		folder = 'D:/Dropbox/Tetris/'
+		filename = name+'_'+str(self.numLinesRemoved)+'_'+time_string+'.sav'
+
+		# 3. Determine foldername.
+		if isinstance(self, Train_Board):
+			folder = 'D:/Dropbox/Tetris/'
+		else:
+			folder = 'C:/Tetris/'
+
+		# 4. Save playfile.
 		full=folder+filename
 		with open(full, 'wb') as f:
 			pickle.dump(self.keys,f)
 			pickle.dump(self.pieces,f)
-		filename = self.name+'_'+str(self.numLinesRemoved)+'_'+time_string+'.model'
-		folder = 'D:/Dropbox/Tetris/'
-		full = folder+filename
-		with open(full, 'wb') as f:
-			pickle.dump(self.machine.gene, f)
+
+		# 5. Save modelfile if training.
+		if isinstance(self, Train_Board):
+			filename = name+'_'+str(self.numLinesRemoved)+'_'+time_string+'.model'
+			full = folder+filename
+			with open(full, 'wb') as f:
+				pickle.dump(self.machine.gene, f)
 		if self.verbose:
 			print('Saved')	
 
@@ -395,7 +418,6 @@ class Board(wx.Panel):
 class Human_Board(Board):
 	def __init__(self, parent):
 		super().__init__(parent)
-		self.name = 'Human'
 
 	def initBoard_specific(self):
 		self.Bind(wx.EVT_KEY_DOWN, self.OnKeyDown)
@@ -492,7 +514,6 @@ class Machine_Board(Board):
 	def __init__(self, parent,inputMachine):
 		self.machine = inputMachine
 		super().__init__(parent)
-		self.name = inputMachine.name
 
 	def initBoard_specific(self):
 		pass
@@ -520,7 +541,6 @@ class Train_Board(Board):
 	def __init__(self, parent,inputMachine, maxTick):
 		self.machine = inputMachine
 		super().__init__(parent,maxTick=maxTick,train=True)
-		self.name = inputMachine.name
 		self.verbose=False
 		self.visualize=False
 

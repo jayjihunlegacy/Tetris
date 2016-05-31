@@ -1,5 +1,4 @@
-﻿import gc
-import wx
+﻿import wx
 from TetrisCore import *
 from Machine import *
 
@@ -8,17 +7,15 @@ def play_machine():
 
 	# this should be changed to loading 'specific machine'
 	machine = DeterministicMachine()
-	#machine = RandomMachine()
-
-	tetris=Tetris()
-	tetris.initFrame('Machine', inputMachine=machine)
+	tetris=Tetris(mode='Machine', inputMachine = machine)
+	tetris.start()
 	app.MainLoop()
 
 def train_machine():
 	app=wx.App()
 	machine = DeterministicMachine()
-	tetris = Tetris()
-	score = tetris.initFrame('Train', inputMachine=machine, maxTick=1000)
+	tetris = Tetris(mode='Train', inputMachine=machine, maxTick=1000)
+	score = tetris.start()
 	app.MainLoop()
 
 
@@ -26,54 +23,62 @@ def play_history(filename):
 	folder='E:/Tetris/'
 	full = folder+filename
 	app = wx.App()
-	tetris = Tetris()
-	tetris.initFrame('Save',inputFile=full)
+	tetris = Tetris(mode='Save',inputFile=full)
+	tetris.start()
 	app.MainLoop()
 
 def human_play():
 	app = wx.App()
-	tetris = Tetris()
-	tetris.initFrame('Human')
+	tetris = Tetris(mode='Human')
+	tetris.start()
 	app.MainLoop()
 
 def evolution_train():
 	max_generation = -1
 	population_per_generation = 128
-	selection_per_population = 32
+	selection_per_population = 64
 	anyFound=False
 	
 	#machines = list()
 	
 	#1. generate initial population
 	genes = EvolutionMachine.generate_genes(population_per_generation)
+	print("1. First population generated.")
+	machine = EvolutionMachine(gene=None)
 	app = wx.App()
-	tetris = Tetris()
+	tetris = Tetris(mode='Train',inputMachine=machine,maxTick=1000)
 	generation = 0
 
-	machine = EvolutionMachine(None,None)
-
 	while generation != max_generation:
-		gc.collect()
 		generation+=1
 		fitnesses = []
-		machines = []
+		isZeroMachine = []
 		#2. measure fitnesses
 		for idx, gene in enumerate(genes):
-			name = 'Evo_G'+str(generation)+'_#'+str(idx+1)
-			
-			#machine = EvolutionMachine(gene,name=name)
 			machine.gene = gene
-			machine.name = name
+			machine.name = 'Evo_G'+str(generation)+'_#'+str(idx+1)		
 			machine.instantiate()
-			score = tetris.initFrame('Train',name=name, inputMachine = machine, maxTick = 1000)
+			tetris.board.initBoard()
+			score = tetris.start()
+			keyhistory = tetris.board.keys
+			isZeroMachine.append(1 if len(keyhistory)==0 else 0)
 			fitnesses.append(score)
-			
 
 		#3. select some good genes
 		ranks=sorted(range(len(fitnesses)), key=lambda i:fitnesses[i], reverse=True)
 		indices = ranks[0:selection_per_population]
+
+		#3-1. if everybody failed, pick randomly...
 		if max(fitnesses) == 0:
+			# if enough number exist, kill all zero instances.
+			if sum(isZeroMachine) < population_per_generation-selection_per_population:
+				for idx,iszero in enumerate(isZeroMachine):
+					if iszero:
+						genes[idx]=None
+				genes = [gene for gene in genes if gene is not None]
+
 			success_genes = random.sample(genes,selection_per_population)
+		#3-2. if somebody succeeded, pick them.
 		else:
 			if not anyFound:
 				subject = 'Genetic Algorithm Notification'
