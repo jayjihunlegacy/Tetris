@@ -22,7 +22,10 @@ def train_machine():
 
 def play_history(filename):
 	folder='D:/Dropbox/Tetris/'
-	full = folder+filename
+	if filename[1]==':':
+		full=filename
+	else:
+		full = folder+filename
 	app = wx.App()
 	tetris = Tetris(mode='Save',inputFile=full)
 	tetris.start()
@@ -35,15 +38,19 @@ def human_play():
 	app.MainLoop()
 
 def evolution_train():
-	trainer = EvolutionTrainer()
+	trainer = EvolutionTrainer(
+		pop_per_gen=128,
+		sel_per_gen=32,
+		max_generation=-1
+		)
 	trainer.train()
 
 def main():
 	#human_play()
-	play_history('Evo_G11_P3_#42_1_2016-06-01_04-21-28-339701.sav')
+	#play_history('Evo_G11_P3_#42_1_2016-06-01_04-21-28-339701.sav')
 	#play_machine()
 	#train_machine()
-	#evolution_train()
+	evolution_train()
 
 if __name__=='__main__':
 	main()

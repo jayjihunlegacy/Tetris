@@ -37,7 +37,7 @@
     <Compile Include="Shape.py">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="Test.py">
+    <Compile Include="_Test.py">
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="TetrisCore.py">

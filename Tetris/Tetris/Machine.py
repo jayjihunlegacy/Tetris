@@ -278,9 +278,7 @@ class EvolutionMachine(Machine):
 				output_neurons[end] += hidden_neurons[start] * weight
 
 		output = tuple([1 if neuron>0 else 0 for neuron in output_neurons])
-		#print('Feed forward :',self.name)
-		#print('Output :',output)
-		#print('Tick :',tick)
+		#print('Feed forward :',self.name,' ',output,' ',tick)
 		return output
 		#output must be in form (LEFT, RIGHT, DOWN, UP, SPACE)
 
