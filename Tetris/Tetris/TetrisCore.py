@@ -7,7 +7,7 @@ class Tetris(wx.Frame):
 	def __init__(self):
 		wx.Frame.__init__(self, None, title='Tetris', size=(360, 760))
 
-	def initFrame(self,mode,inputFile=None,inputMachine=None):
+	def initFrame(self,mode,inputFile=None,inputMachine=None,maxTick=None):
 		'''
 		initialize frame.
 		'''
@@ -23,15 +23,15 @@ class Tetris(wx.Frame):
 		elif mode == 'Machine':
 			self.board = Machine_Board(self, inputMachine)
 		elif mode == 'Train':
-			self.board = Train_Board(self, inputMachine)
+			self.board = Train_Board(self, inputMachine, maxTick)
 		else:
 			print('Invalid mode')
 		self.board.SetFocus()
-		self.board.start()
-
-		#3. show the board.
 		self.Center()
 		self.Show(True)
+		return self.board.start()
+
+		
 
 # end of class.
 
@@ -146,10 +146,20 @@ class Board(wx.Panel):
 	keycodes = [wx.WXK_LEFT, wx.WXK_RIGHT, wx.WXK_UP, wx.WXK_DOWN, wx.WXK_SPACE]
 	ID_TIMER = 1
 
-	def __init__(self, parent):
-		wx.Panel.__init__(self, parent, style=wx.WANTS_CHARS)
-		self.initBoard()
-		self.name = 'Noname'
+	def __init__(self, parent, dummy=False):		
+		if not dummy:
+			wx.Panel.__init__(self, parent, style=wx.WANTS_CHARS)
+			self.name = 'Noname'
+			self.initBoard()
+			self.verbose=True
+			self.visualize=True
+		else:
+			self.name = 'Dummy'
+			self.numLinesRemoved=0
+			self.verbose=False
+			self.visualize=False
+
+		self.isdummy=dummy
 
 	def initBoard(self):
 		'''
@@ -190,11 +200,9 @@ class Board(wx.Panel):
 
 	def shapeAt(self, x,y):
 		return self.board[y][x]
-		#return self.board[(y*Board.BoardWidth) + int(x)]
 
 	def setShapeAt(self,x,y,shape):
 		self.board[y][x] = shape
-		#self.board[(y*Board.BoardWidth) + int(x)] = shape
 
 	def squareWidth(self):
 		return self.GetClientSize().GetWidth() / Board.BoardWidth
@@ -254,6 +262,8 @@ class Board(wx.Panel):
 	#		self.board.append(Tetrominoes.NoShape)
 
 	def OnPaint(self, event):
+		if not (self.visualize or self.isOver):
+			return
 		dc = wx.PaintDC(self)
 
 		for i in range(Board.BoardHeight):
@@ -272,36 +282,40 @@ class Board(wx.Panel):
 					(Board.BoardHeight - y - 1) * self.squareHeight(),
 					self.curPiece.shape())
 					
-	def perform_valid_key(self, keycode):
-		if keycode == wx.WXK_LEFT:
-			print('Pressed Key : LEFT')
-			self.tryMove(self.curPiece, self.curX - 1, self.curY)
-		elif keycode == wx.WXK_RIGHT:
-			print('Pressed Key : RIGHT')
-			self.tryMove(self.curPiece, self.curX + 1, self.curY)
-		elif keycode == wx.WXK_UP:
-			print('Pressed Key : UP')
-			self.tryMove(self.curPiece.rotatedRight(), self.curX, self.curY)
-		elif keycode == wx.WXK_DOWN:
-			print('Pressed Key : DOWN')
-			self.oneLineDown()		
-		elif keycode == wx.WXK_SPACE:
-			print('Pressed Key : SPACE')
-			self.dropDown()
+	def perform_valid_key(self, keycode, verbose=True, isstr=False):
+		if keycode == wx.WXK_LEFT or (isstr and keycode=='LEFT'):
+			if verbose and self.verbose:
+				print('Pressed Key : LEFT')
+			return self.tryMove(self.curPiece, self.curX - 1, self.curY)
+		elif keycode == wx.WXK_RIGHT or (isstr and keycode=='RIGHT'):
+			if verbose and self.verbose:
+				print('Pressed Key : RIGHT')
+			return self.tryMove(self.curPiece, self.curX + 1, self.curY)
+		elif keycode == wx.WXK_UP or (isstr and keycode=='UP'):
+			if verbose and self.verbose:
+				print('Pressed Key : UP')
+			return self.tryMove(self.curPiece.rotatedRight(), self.curX, self.curY)
+		elif keycode == wx.WXK_DOWN or (isstr and keycode=='DOWN'):
+			if verbose and self.verbose:
+				print('Pressed Key : DOWN')
+			return self.oneLineDown()		
+		elif keycode == wx.WXK_SPACE or (isstr and keycode=='SPACE'):
+			if verbose and self.verbose:
+				print('Pressed Key : SPACE')
+			return self.dropDown()
 
 	def OnTimer(self, event):
 		'''
 		event handler for TICK_TIMER
 		Called when 'tick'
 		'''
-		if event.GetId() == Board.ID_TIMER:
-			self.ticks+=1
-			#when tick is enough for Linedown, 
-			if self.ticks % Board.TICKS_FOR_LINEDOWN == 0:
-				self.oneLineDown()
-
-			# location of this code is vague...
-			self.OnTimer_specific(event)
+		
+		self.ticks+=1
+		#when tick is enough for Linedown, 
+		if self.ticks % Board.TICKS_FOR_LINEDOWN == 0:
+			self.oneLineDown()
+		# location of this code is vague...
+		self.OnTimer_specific(event)
 				
 	
 
@@ -339,8 +353,10 @@ class Board(wx.Panel):
 		#remove complete lines.
 		self.removeFullLines()
 
+
 		#spawn new piece
-		self.newPiece()
+		if not self.isdummy:
+			self.newPiece()
 
 	def removeFullLines(self):
 		'''
@@ -349,7 +365,7 @@ class Board(wx.Panel):
 		'''
 
 		numFullLines = 0
-		statusbar=self.GetParent().statusbar
+		
 		rowsToRemove=[]
 
 		for i in range(Board.BoardHeight):
@@ -359,10 +375,9 @@ class Board(wx.Panel):
 					n = n + 1
 			if n == 10:
 				rowsToRemove.append(i)
-
 		rowsToRemove.reverse()
 		for m in rowsToRemove:
-			for k in range(m, Board.BoardHeight):
+			for k in range(m, Board.BoardHeight-1):
 				for l in range(Board.BoardWidth):
 					self.setShapeAt(l, k, self.shapeAt(l, k + 1))
 
@@ -370,9 +385,12 @@ class Board(wx.Panel):
 
 		if numFullLines > 0:
 			self.numLinesRemoved = self.numLinesRemoved + numFullLines
-			statusbar.SetStatusText(str(self.numLinesRemoved))
-			self.curPiece.setShape(Tetrominoes.NoShape)
-			self.Refresh()
+			if not self.isdummy:
+				statusbar=self.GetParent().statusbar
+				statusbar.SetStatusText(str(self.numLinesRemoved))
+				self.curPiece.setShape(Tetrominoes.NoShape)
+				if self.visualize:
+					self.Refresh()
 
 	def newPiece(self):
 		'''
@@ -385,7 +403,8 @@ class Board(wx.Panel):
 		shape = self.nextPiece.shape()
 		self.pieces.append((self.ticks,shape))
 		shape_str = ['Noshape', 'Z-shape', 'S-shape', '|-shape', 'T-shape', 'Square', 'L-shape', "L'-shape"]
-		print('Next Shape :',shape_str[shape])
+		if self.verbose:
+			print('Next Shape :',shape_str[shape])
 
 		self.curX = Board.BoardWidth//2 + 1
 		self.curY = Board.BoardHeight - 1 + self.curPiece.minY()
@@ -414,7 +433,8 @@ class Board(wx.Panel):
 		self.curPiece = newPiece
 		self.curX = newX
 		self.curY = newY
-		self.Refresh()
+		if (not self.isdummy) and self.visualize:
+			self.Refresh()
 		return True
 
 	def drawSquare(self,dc,x,y,shape):
@@ -453,6 +473,7 @@ class Board(wx.Panel):
 		self.timer.Stop()
 		self.isStarted = False
 		self.isOver = True
+		print('Game over. Score :',self.numLinesRemoved)
 		statusbar = self.GetParent().statusbar
 		statusbar.SetStatusText('Game Over')
 		self.save_history()
@@ -513,9 +534,13 @@ class Human_Board(Board):
 
 	#overriding.
 	def OnTimer_specific(self, event):
+		p=self.curPiece
+		tup=(p.maxX(),p.minX(),p.maxY(),p.minY())
+		#print(tup)
+		print(p.pieceShape)
+		print(self.curX, self.curY)
 		pass
-
-
+	
 class Save_Board(Board):
 	def __init__(self, parent, inputFile):
 		self.inputFile = inputFile
@@ -571,7 +596,6 @@ class Save_Board(Board):
 		pass
 
 
-
 class Machine_Board(Board):
 	def __init__(self, parent,inputMachine):
 		self.machine = inputMachine
@@ -586,8 +610,9 @@ class Machine_Board(Board):
 		in every tick, feedforward through the machine, and get the result.
 		apply the result.
 		'''
-		#output must be in form (LEFT, RIGHT, UP, DOWN, SPACE)		
-		output = self.machine.feedForward(self.board, self.ticks)
+		#output must be in form (LEFT, RIGHT, UP, DOWN, SPACE)
+		input = (self.board, self.curX, self.curY, self.curPiece)
+		output = self.machine.feedForward(input, self.ticks)
 		if output is None:
 			return
 				
@@ -598,4 +623,44 @@ class Machine_Board(Board):
 
 
 class Train_Board(Board):
-	pass
+	def __init__(self, parent,inputMachine, maxTick):
+		self.machine = inputMachine
+		super().__init__(parent)
+		self.name = inputMachine.name
+		self.verbose=False
+		self.visualize= False
+		self.maxTick=maxTick
+
+	def initBoard_specific(self):
+		pass
+
+	def OnTimer_specific(self,event):
+		'''
+		in every tick, feedforward through the machine, and get the result.
+		apply the result.
+		'''
+		if self.ticks==self.maxTick:
+			print('Game over due to max tick.')
+			self.game_over()
+
+
+		#output must be in form (LEFT, RIGHT, UP, DOWN, SPACE)
+		input = (self.board, self.curX, self.curY, self.curPiece)
+		output = self.machine.feedForward(input, self.ticks)
+				
+		for i in range(5):
+			if output[i]>0:
+				self.keys.append((self.ticks, Board.keycodes[i]))
+				self.perform_valid_key(Board.keycodes[i],verbose=False)
+
+	def start(self):
+		self.isStarted=True
+		self.numLinesRemoved = 0
+		self.clearBoard()
+		self.newPiece()
+		while True:
+			self.OnTimer(None)
+			if self.isOver:
+				break
+		print("Ticks :",self.ticks)
+		return self.numLinesRemoved

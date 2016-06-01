@@ -5,9 +5,9 @@ from Machine import *
 def play_machine():
 	app=wx.App()
 
-	#this should be changed to loading 'specific machine'
-	#machine = DeterministicMachine()
-	machine = RandomMachine()
+	# this should be changed to loading 'specific machine'
+	machine = DeterministicMachine()
+	#machine = RandomMachine()
 
 	tetris=Tetris()
 	tetris.initFrame('Machine', inputMachine=machine)
@@ -15,9 +15,9 @@ def play_machine():
 
 def train_machine():
 	app=wx.App()
-	machine = EvolutionMachine()
+	machine = DeterministicMachine()
 	tetris = Tetris()
-	tetris.initFrame('Train', inputMachine=machine)
+	tetris.initFrame('Train', inputMachine=machine, maxTick=2000)
 	app.MainLoop()
 
 def play_history(filename):
@@ -36,8 +36,9 @@ def human_play():
 
 def main():
 	#human_play()
-	play_history('RandomMachine_0_2016-05-23_15-33-20-094546.sav')
-	#play_machine()
+	#play_history('DeterministicMachine_18_2016-05-25_16-53-18-633951.sav')
+	play_machine()
+	#train_machine()
 
 if __name__=='__main__':
 	main()
