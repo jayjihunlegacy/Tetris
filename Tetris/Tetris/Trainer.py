@@ -6,6 +6,9 @@ class Trainer(object):
 	def __init__(self):
 		pass
 
+	def train(self):
+		pass
+
 class EvolutionTrainer(Trainer):
 	
 	def __init__(self, pop_per_gen, sel_per_gen, max_generation=-1):
@@ -16,6 +19,10 @@ class EvolutionTrainer(Trainer):
 		self.gene_per_process = self.population_per_generation // self.PROCESS_NUM
 		self.selection_per_process = self.selection_per_generation // self.PROCESS_NUM
 		super().__init__()
+
+		self.dict_set=None
+		self.lock_set=None
+		self.sendmail=False
 
 	def get_firstpopulation(self, random):
 		if random:
@@ -42,46 +49,33 @@ class EvolutionTrainer(Trainer):
 		fitness_dict = manager.dict()
 		zeromachine_dict = manager.dict()		
 		genes_dict = manager.dict()
-		m_dict_set = (fitness_dict, zeromachine_dict, genes_dict)
-
 		offsprings_dict = manager.dict()
 		parents_dict = manager.dict()
-		b_dict_set = (offsprings_dict, parents_dict)
+		self.dict_set = (fitness_dict, zeromachine_dict, genes_dict, offsprings_dict, parents_dict)
+		
+		m_locks = [manager.Lock() for i in range(self.PROCESS_NUM)]
+		m_res_locks = [manager.Lock() for i in range(self.PROCESS_NUM)]
+		b_locks = [manager.Lock() for i in range(self.PROCESS_NUM)]
+		b_res_locks = [manager.Lock() for i in range(self.PROCESS_NUM)]
 
-		# prepare locks.
-		measure_locks = [manager.Lock() for i in range(self.PROCESS_NUM)]
-		measure_res_locks = [manager.Lock() for i in range(self.PROCESS_NUM)]
-		breed_locks = [manager.Lock() for i in range(self.PROCESS_NUM)]
-		breed_res_locks = [manager.Lock() for i in range(self.PROCESS_NUM)]
-		for lock in measure_locks:
+		for lock in m_locks:
 			lock.acquire()
-		for lock in measure_res_locks:
+		for lock in m_res_locks:
 			lock.acquire()
-		for lock in breed_locks:
+		for lock in b_locks:
 			lock.acquire()
-		for lock in breed_res_locks:
+		for lock in b_res_locks:
 			lock.acquire()
 
 		# Spawn processes for measuring.
-		m_processes=[]
+		processes=[]
 		for procnum in range(self.PROCESS_NUM):
-			lock_set = (measure_locks[procnum], measure_res_locks[procnum])
+			lock_set = (m_locks[procnum], m_res_locks[procnum], b_locks[procnum], b_res_locks[procnum])
 			p = Process(
-				target=measure_worker, 
-				args=(machines[procnum], tetrises[procnum], procnum, m_dict_set, lock_set)
+				target=self.worker, 
+				args=(procnum,machines[procnum], tetrises[procnum], lock_set)
 				)
-			m_processes.append(p)
-			p.start()
-
-		# Spawn processes for breeding.
-		b_processes=[]
-		for procnum in range(self.PROCESS_NUM):
-			lock_set = (breed_locks[procnum], breed_res_locks[procnum])
-			p = Process(
-				target=breed_worker,
-				args = (self.gene_per_process, b_dict_set, procnum, lock_set)
-				)
-			b_processes.append(p)
+			processes.append(p)
 			p.start()
 
 		# for each generation, !!!!!!!!!!!!!!!!!!!
@@ -91,6 +85,7 @@ class EvolutionTrainer(Trainer):
 			generation+=1	
 			fitness_dict.clear()
 			zeromachine_dict.clear()
+			genes_dict.clear()
 			offsprings_dict.clear()		
 			parents_dict.clear()
 			# Map the inputs.
@@ -101,11 +96,11 @@ class EvolutionTrainer(Trainer):
 			#=======print("Start measuring")=======
 
 			# Let workers work!
-			for lock in measure_locks:
+			for lock in m_locks:
 				lock.release()
 		
 			# Wait until workers are done!
-			for lock in measure_res_locks:
+			for lock in m_res_locks:
 				lock.acquire()
 
 			#=======print("End measuring")=======
@@ -133,7 +128,7 @@ class EvolutionTrainer(Trainer):
 				success_genes = random.sample(genes,self.selection_per_generation)
 			#3-2. if somebody succeeded, pick them.
 			else:
-				if not anyFound:
+				if (not anyFound) and self.sendmail:
 					subject = 'Genetic Algorithm Notification'
 					body = 'Genome found.'
 					sendEmail(subject,body)
@@ -150,10 +145,10 @@ class EvolutionTrainer(Trainer):
 				parents_dict[i]=success_gene_pool[i]
 			
 			#========print('Start breeding')=========
-			for lock in breed_locks:
+			for lock in b_locks:
 				lock.release()
 
-			for lock in breed_res_locks:
+			for lock in b_res_locks:
 				lock.acquire()
 
 			#========print('End breeding')============
@@ -168,56 +163,50 @@ class EvolutionTrainer(Trainer):
 		for p in m_processes + b_processes:
 			p.join()
 
+	def worker(self, procnum, machine, tetris, lock_set):
+		fitness_dict, zero_dict, gene_dict, offspring_dict, parents_dict = self.dict_set
+		m_lock, m_res_lock, b_lock, b_res_lock = lock_set
 
+		generation = 0
+		while generation != self.max_generation:	
+					
+			#============1. Measuring===============
+			#wait until main process signals.
+			m_lock.acquire()
 
-	
-#@staticmethod
-def measure_worker(machine, tetris, procnum, dict_set, lock_set):	
-	fitness_dict, zero_dict, gene_dict = dict_set
-	lock,res_lock = lock_set
+			generation+=1
+			fitnesses=[]
+			isZeroMachine=[]
+			# for each genome,
+			for idx, gene in enumerate(gene_dict[procnum]):
+				# 1. Measure fitness.
+				machine.gene = gene
+				machine.name = 'Evo_G'+str(generation)+'_P'+str(procnum)+'_#'+str(idx+1)
+				machine.instantiate()
+				tetris.board.initBoard()
+				score=tetris.start()
+				fitnesses.append(score)
 
-	generation=0
-	# for each generation,
-	while True:
-		# wait until main process signals.
-		lock.acquire()
-
-		generation+=1
-		fitnesses = []
-		isZeroMachine = []
-		# for each genome,
-		for idx, gene in enumerate(gene_dict[procnum]):
-			# 1. Measure fitness.
-			machine.gene = gene
-			machine.name = 'Evo_G'+str(generation)+'_P'+str(procnum)+'_#'+str(idx+1)
-			machine.instantiate()
-			tetris.board.initBoard()
-			score=tetris.start()
-			fitnesses.append(score)
-
-			# 2. Test if ZeroMachine.
-			keyhistory=tetris.board.keys
-			isZeroMachine.append(1 if len(keyhistory)==0 else 0)
+				# 2. Test if ZeroMachine.
+				keyhistory=tetris.board.keys
+				isZeroMachine.append(1 if len(keyhistory)==0 else 0)
 			
-		# collect data for each genome in generation.
-		fitness_dict[procnum] = fitnesses
-		zero_dict[procnum] = isZeroMachine
+			# collect data for each genome in generation.
+			fitness_dict[procnum] = fitnesses
+			zero_dict[procnum] = isZeroMachine
 
-		#signal the main process that the job is done!
-		res_lock.release()
-		
-#@staticmethod
-def breed_worker(gene_per_process,dict_set, procnum, lock_set):
-	lock,res_lock = lock_set
-	offspring_dict, parents_dict = dict_set
+			#signal the main process that the job is done!
+			m_res_lock.release()
+			#============Measuring done==================
+			
 
-	while True:
-		# wait until main process signals.		
-		lock.acquire()
+			#============2. Breeding ====================
+			#wait until main process signals.
+			b_lock.acquire()
 
-		success_genes = parents_dict[procnum]
-		offspring_genes = EvolutionMachine.make_offsprings(success_genes,gene_per_process)
-		offspring_dict[procnum]=offspring_genes
+			success_genes = parents_dict[procnum]
+			offspring_genes = EvolutionMachine.make_offsprings(success_genes,self.gene_per_process)
+			offspring_dict[procnum]=offspring_genes
 
-		# signal the main process that the job is done!
-		res_lock.release()
+			# signal the main process that the job is done!
+			b_res_lock.release()
