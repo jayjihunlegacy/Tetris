@@ -22,13 +22,28 @@
     <EnableUnmanagedDebugging>false</EnableUnmanagedDebugging>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="Boards.py">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="Machine.py">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Mail.py">
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="Main.py">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="Shape.py">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Test.py">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="TetrisCore.py">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Trainer.py">
       <SubType>Code</SubType>
     </Compile>
   </ItemGroup>

@@ -1,13 +1,11 @@
 ﻿import random as r
 from TetrisCore import *
-import copy
 class Machine(object):
 	def __init__(self, gene=None):
 		self.gene = gene
 		self.model = None
-		self.instantiate()
 		self.name = 'GeneralMachine'
-		pass
+		self.instantiate()
 
 	#for overriding.
 	def instantiate(self):
@@ -59,8 +57,6 @@ class RandomMachine(Machine):
 			return (0,0,0,0,0)
 
 
-
-
 class DeterministicMachine(Machine):
 	def __init__(self, cool_time=1, gene=None):
 		super().__init__(gene=gene)
@@ -68,25 +64,23 @@ class DeterministicMachine(Machine):
 		self.TICK_COOLTIME = cool_time
 		self.aimPosition = None
 		self.dummyboard=Board(None, dummy=True)
-		pass
 
 	#overriding.
 	def instantiate(self):
+		#if gene is None, randomly generate.
 		if self.gene is None:
 			self.gene = (-4, -1)
-			#if gene is None, randomly generate.
-			pass
 		#1. number of holes.
 		#2. height penalty sum.
 
 		self.w = list(self.gene)
 
 		self.aims=list()
-		self.aims.append([0,0])
 		for rotate in range(4):
+			self.aims.append([0,rotate])
 			for left in range(1,7):
 				self.aims.append([left,rotate])
-			for right in range(1,7):
+			for right in range(1,4):
 				self.aims.append([-right,rotate])
 
 		self.instructions=list()
@@ -109,39 +103,37 @@ class DeterministicMachine(Machine):
 		if not have, make aimPosition, and try.
 		'''
 		#output must be in form (LEFT, RIGHT, UP, DOWN, SPACE)
-		if input[3].pieceShape == Tetrominoes.TShape and input[2]==Board.BoardHeight-1:
+
+		#input = (board, curX, curY, pieces)
+		if input[3][0].pieceShape == Tetrominoes.TShape and input[2]==Board.BoardHeight-1:
 			return (0,0,0,1,0)
 
 		if self.aimPosition is None:
-			board = input[0]
-			
-			curCoord=input[1:3]
-			curPiece = input[3]
-
-			self.dummyboard.board=board
-			self.dummyboard.curX=input[1]
-			self.dummyboard.curY=input[2]
-			self.dummyboard.curPiece=copy.deepcopy(input[3])
+			self.dummyboard.origboard = input[0]
+			self.dummyboard.origX = input[1]
+			self.dummyboard.origY = input[2]
+			self.dummyboard.origpieces = tuple()
+			self.dummyboard.origpieces += (input[3][0].shape(),)
+			self.dummyboard.origpieces += (input[3][1].shape(),)
+			self.dummyboard.origpieces += (input[3][2].shape(),)
+			self.dummyboard.origpieces += (input[3][3].shape(),)
+			self.dummyboard.origpieces += (input[3][4].shape(),)
+			self.dummyboard.origpieces += (input[3][5].shape(),)
 		
 			# generate possible scenarios.
 			scenarios = self.generate_scenarios()
 
 			# digitize scenarios.
-			scenarios = [Machine.digitize(scenario) for scenario in scenarios]
+			#scenarios = [Machine.digitize(scenario) for scenario in scenarios]
 
 			# evaluate the scenarios and pick the best.
-			scores=list()
-			i=0
 			scores = [self.evaluate_scenario(scenario) for scenario in scenarios]	
-			#print(scores)
-			#print(self.aims)
+			
 			max_scenario_index = scores.index(max(scores))
 			
 			# set aimPosition according the max_scenario.
-			self.aimPosition = copy.deepcopy(self.aims[max_scenario_index])
+			self.aimPosition = [self.aims[max_scenario_index][0], self.aims[max_scenario_index][1]]
 			print("Aim Position Set!!:",self.aimPosition)
-			#print("Scenario index : %i, score : "%(max_scenario_index,),scores[max_scenario_index])
-			#print("Scenario :")
 
 		if tick % self.TICK_COOLTIME == 0:
 			# try to move to that aimPosition.
@@ -162,18 +154,31 @@ class DeterministicMachine(Machine):
 			return (0,0,0,0,1)
 		return (0,0,0,0,0)
 
+	def reset_dummyboard(self):
+		for i in range(Board.BoardHeight):
+			for j in range(Board.BoardWidth):
+				self.dummyboard.board[i][j] = self.dummyboard.origboard[i][j]
+		self.dummyboard.curX = self.dummyboard.origX
+		self.dummyboard.curY = self.dummyboard.origY
+		self.dummyboard.curPiece.setShape(self.dummyboard.origpieces[0])
+		self.dummyboard.nextPiece.setShape(self.dummyboard.origpieces[1])
+		self.dummyboard.next2Piece.setShape(self.dummyboard.origpieces[2])
+		self.dummyboard.next3Piece.setShape(self.dummyboard.origpieces[3])
+		self.dummyboard.next4Piece.setShape(self.dummyboard.origpieces[4])
+		self.dummyboard.next5Piece.setShape(self.dummyboard.origpieces[5])
+
 	def generate_scenarios(self):
 		scenarios=list()
 		for instruction in self.instructions:
-			board=copy.deepcopy(self.dummyboard)
+			self.reset_dummyboard()
 			results = list()
 			for cmd in instruction:
 				if cmd=='U':
-					results.append(board.perform_valid_key('UP', isstr=True, verbose=False))
+					results.append(self.dummyboard.perform_valid_key('UP', isstr=True, verbose=False))
 				elif cmd=='L':
-					results.append(board.perform_valid_key('LEFT', isstr=True, verbose=False))
+					results.append(self.dummyboard.perform_valid_key('LEFT', isstr=True, verbose=False))
 				elif cmd=='R':
-					results.append(board.perform_valid_key('RIGHT', isstr=True, verbose=False))
+					results.append(self.dummyboard.perform_valid_key('RIGHT', isstr=True, verbose=False))
 				else:
 					print('INVALID cmd :',cmd)
 				
@@ -181,8 +186,13 @@ class DeterministicMachine(Machine):
 			if not ispossible:
 				scenarios.append(None)
 			else:
-				board.dropDown()
-				result = copy.deepcopy(board.board)
+				self.dummyboard.dropDown()
+				result=list()
+				for i in range(Board.BoardHeight):
+					row = list()
+					for j in range(Board.BoardWidth):
+						row.append(1 if self.dummyboard.board[i][j] else 0)
+					result.append(row)
 				scenarios.append(result)
 		return scenarios
 
@@ -218,7 +228,206 @@ class DeterministicMachine(Machine):
 		return dot_product
 
 class EvolutionMachine(Machine):
-	pass
+	INPUT_NEURON_NUM = 81
+	HIDDEN_NEURON_NUM = 40
+	OUTPUT_NEURON_NUM = 5
+
+	LEVEL_A_MIN_SYNAPSE = 200
+	LEVEL_A_MAX_SYNAPSE = 3000
+	LEVEL_B_MIN_SYNAPSE = 20
+	LEVEL_B_MAX_SYNAPSE = 180
+
+	def __init__(self, gene, cool_time=1,name='EvolutionMachine'):
+		super().__init__(gene=gene)
+		self.name=name
+		self.TICK_COOLTIME = cool_time
+
+	#overriding.
+	def instantiate(self):
+		#real instantiation using self.gene
+		self.model = self.gene
+		
+	#overriding.
+	def feedForward(self, input, tick):
+		
+		board,curX,curY,pieces = input
+		refined_board = EvolutionMachine.refine_board(board,curX,curY,pieces[0])
+		#flattened board with length of 81.
+		flattened_board = [item for sublist in refined_board for item in sublist]
+		flattened_board+=[1]
+
+		#hidden neurons with length of 40.
+		hidden_neurons = [0 for i in range(EvolutionMachine.HIDDEN_NEURON_NUM)]
+
+		#output neurons with length of 5.
+		output_neurons = [0 for i in range(EvolutionMachine.OUTPUT_NEURON_NUM)]
+		
+		# two list of tuples.
+		A_synapses, B_synapses = self.model
+
+		# first level feed forward.
+		for a_synapse in A_synapses:
+			start, end, weight = a_synapse
+			if flattened_board[start]:
+				hidden_neurons[end] += weight
+
+		# second level feed forward.
+		for b_synapse in B_synapses:
+			start, end, weight = b_synapse
+			if hidden_neurons[start]>0:
+				output_neurons[end] += hidden_neurons[start] * weight
+
+		output = tuple([1 if neuron>0 else 0 for neuron in output_neurons])
+		#print('Feed forward :',self.name)
+		#print('Output :',output)
+		#print('Tick :',tick)
+		return output
+		#output must be in form (LEFT, RIGHT, DOWN, UP, SPACE)
+
+	@staticmethod
+	def refine_board(board,curX,curY,curPiece):
+		# 1. Take only 4 top lines of the board.
+		top_line = 0
+		for i in reversed(range(Board.BoardHeight,3)):
+			line = board[i]
+			is_any_block = any(line)
+			if is_any_block:
+				top_line=i-3
+				break
+
+		refined_board=board[top_line:top_line+4]
+
+		# 2. Render current piece.
+		table = list()
+		for i in range(4):
+			table.append([0,0,0,0,0,0,0,0,0,0])
+		minY = curPiece.minY()
+		for coord in curPiece.coords:
+			relX,relY = coord
+			Y = relY-minY
+			X = relX+curX
+			table[Y][X] = 1
+		return refined_board+table
+
+
+	def generate_genes(pop_per_gen):
+		result = []
+
+		for i in range(pop_per_gen):
+			#1. randomly generate A_level synapses
+			num_of_syn = r.randint(500,700)
+			gene_a=[]
+			while len(gene_a) != num_of_syn:
+				start = r.randint(0,EvolutionMachine.INPUT_NEURON_NUM-1)
+				end = r.randint(0,EvolutionMachine.HIDDEN_NEURON_NUM-1)
+				weight = 1 if r.getrandbits(1) else -1
+				synapse = (start,end,weight)
+				for other_synapse in gene_a:
+					if other_synapse[0:2] == synapse[0:2]:
+						continue
+				gene_a.append(synapse)
+
+			#2. randomly generate B_level synapses
+			num_of_syn = r.randint(60,100)
+			gene_b=[]
+			while len(gene_b) != num_of_syn:
+				start = r.randint(0,EvolutionMachine.HIDDEN_NEURON_NUM-1)
+				end = r.randint(0,EvolutionMachine.OUTPUT_NEURON_NUM-1)
+				weight = 1 if r.getrandbits(1) else -1
+				synapse = (start,end,weight)
+				for other_synapse in gene_b:
+					if other_synapse[0:2] == synapse[0:2]:
+						continue
+				gene_b.append(synapse)
+
+			newgene=(gene_a,gene_b)
+			result.append(newgene)
+		return result
+
+	def make_offsprings(parent_genes, pop_per_gen):
+		
+		num_of_parents = len(parent_genes)
+		while len(parent_genes) != pop_per_gen:
+			mother = r.choice(parent_genes[0:num_of_parents])
+			father = r.choice(parent_genes[0:num_of_parents])
+
+			A_syn_m, B_syn_m = mother
+			A_syn_f, B_syn_f = father
+
+			#1. average A_level synapses
+			num_of_A = (len(A_syn_m) + len(A_syn_f)) // 2
+			gene_a=[]
+			A_syn_pool = A_syn_m+A_syn_f
+			while len(gene_a) != num_of_A:				
+				synapse = r.choice(A_syn_pool)
+				for other_synapse in gene_a:
+					if other_synapse[0:2] == synapse[0:2]:
+						continue
+				gene_a.append(synapse)
+
+			#2. average B_level synapses
+			num_of_B = (len(B_syn_m) + len(B_syn_f)) // 2
+			gene_b=[]
+			B_syn_pool = B_syn_m+B_syn_f
+			while len(gene_b) != num_of_B:				
+				synapse = r.choice(B_syn_pool)
+				for other_synapse in gene_b:
+					if other_synapse[0:2] == synapse[0:2]:
+						continue
+				gene_b.append(synapse)
+
+			#3. make mutation on A.
+			# delete [0,4] weights in A_level and insert another [0,4] weights.
+			delete_a_num = r.randint(0,10)
+			if len(gene_a) < EvolutionMachine.LEVEL_A_MIN_SYNAPSE:
+				delete_a_num = 0
+			for i in range(delete_a_num):
+				gene_a.remove(r.choice(gene_a))
+
+			insert_a_num = r.randint(0,10)
+			if len(gene_a) > EvolutionMachine.LEVEL_A_MAX_SYNAPSE:
+				insert_a_num = 0
+
+			target_a_num = len(gene_a) + insert_a_num
+
+			while len(gene_a) != target_a_num:
+				start = r.randint(0,EvolutionMachine.INPUT_NEURON_NUM-1)
+				end = r.randint(0,EvolutionMachine.HIDDEN_NEURON_NUM-1)
+				weight = 1 if r.getrandbits(1) else -1
+				synapse = (start,end,weight)
+				for other_synapse in gene_a:
+					if other_synapse[0:2] == synapse[0:2]:
+						continue
+				gene_a.append(synapse)
+
+			# delete [0,2] weights in B_level and insert another [0,2] weights.
+			delete_b_num = r.randint(0,5)
+			if len(gene_b) < EvolutionMachine.LEVEL_B_MIN_SYNAPSE:
+				delete_b_num=0
+			for i in range(delete_b_num):
+				gene_b.remove(r.choice(gene_b))
+
+			insert_b_num = r.randint(0,5)
+			if len(gene_b) > EvolutionMachine.LEVEL_B_MAX_SYNAPSE:
+				insert_b_num = 0
+
+			target_b_num = len(gene_b) + insert_b_num
+
+			while len(gene_b) != target_b_num:
+				start = r.randint(0,EvolutionMachine.HIDDEN_NEURON_NUM-1)
+				end = r.randint(0,EvolutionMachine.OUTPUT_NEURON_NUM-1)
+				weight = 1 if r.getrandbits(1) else -1
+				synapse = (start,end,weight)
+				for other_synapse in gene_b:
+					if other_synapse[0:2] == synapse[0:2]:
+						continue
+				gene_b.append(synapse)
+
+
+			parent_genes.append((gene_a,gene_b))
+
+		return parent_genes
+
 
 class NeuralNetMachine(Machine):
 	pass
