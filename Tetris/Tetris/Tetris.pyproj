@@ -5,7 +5,7 @@
     <SchemaVersion>2.0</SchemaVersion>
     <ProjectGuid>e28bce8e-6c80-4a9b-873b-bffaee6a2700</ProjectGuid>
     <ProjectHome>.</ProjectHome>
-    <StartupFile>Test.py</StartupFile>
+    <StartupFile>Main.py</StartupFile>
     <SearchPath>
     </SearchPath>
     <WorkingDirectory>.</WorkingDirectory>
@@ -41,6 +41,9 @@
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="TetrisCore.py">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Trainer.py">
       <SubType>Code</SubType>
     </Compile>
   </ItemGroup>
