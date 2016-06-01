@@ -1,9 +1,4 @@
-﻿import random
-import datetime
-import pickle
-import time
-from Mail import *
-from Boards import *
+﻿from Boards import *
 
 # end of class.
 

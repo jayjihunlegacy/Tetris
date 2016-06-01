@@ -2,7 +2,7 @@
 from TetrisCore import *
 from Machine import *
 from multiprocessing import Process, Manager
-
+from Mail import *
 def play_machine():
 	app=wx.App()
 
@@ -21,7 +21,7 @@ def train_machine():
 
 
 def play_history(filename):
-	folder='E:/Tetris/'
+	folder='D:/Dropbox/Tetris/'
 	full = folder+filename
 	app = wx.App()
 	tetris = Tetris(mode='Save',inputFile=full)
@@ -179,10 +179,10 @@ def evolution_train():
 
 def main():
 	#human_play()
-	#play_history('Evo_G53_#19_0_2016-05-30_01-01-34-770212.sav')
+	play_history('Evo_G11_P3_#42_1_2016-06-01_04-21-28-339701.sav')
 	#play_machine()
 	#train_machine()
-	evolution_train()
+	#evolution_train()
 
 if __name__=='__main__':
 	main()

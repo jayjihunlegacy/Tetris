@@ -1,5 +1,7 @@
-import wx
+﻿import wx
 from Shape import *
+import datetime
+import pickle
 class Board(wx.Panel):
 	BoardWidth=10
 	BoardHeight=22
@@ -9,6 +11,7 @@ class Board(wx.Panel):
 
 
 	def __init__(self, parent, dummy=False, maxTick=-1, train=False):
+		#print("Board called")
 		self.isdummy=dummy
 		self.maxTick=maxTick
 		self.istrain = train
@@ -268,9 +271,11 @@ class Board(wx.Panel):
 		if numFullLines > 0:
 			self.numLinesRemoved = self.numLinesRemoved + numFullLines
 			if not self.isdummy:
+				self.curPiece.setShape(Tetrominoes.NoShape)
+			if (not self.isdummy) and (not self.istrain):
 				statusbar=self.GetParent().statusbar
 				statusbar.SetStatusText(str(self.numLinesRemoved))
-				self.curPiece.setShape(Tetrominoes.NoShape)
+				
 				if self.visualize:
 					self.Refresh()
 
@@ -399,7 +404,7 @@ class Board(wx.Panel):
 		if isinstance(self, Train_Board):
 			folder = 'D:/Dropbox/Tetris/'
 		else:
-			folder = 'C:/Tetris/'
+			folder = 'E:/Tetris/'
 
 		# 4. Save playfile.
 		full=folder+filename
@@ -542,6 +547,7 @@ class Machine_Board(Board):
 
 class Train_Board(Board):
 	def __init__(self, parent,inputMachine, maxTick):
+		#print("Train_board called.")
 		self.machine = inputMachine
 		super().__init__(parent,maxTick=maxTick,train=True)
 		self.verbose=False
