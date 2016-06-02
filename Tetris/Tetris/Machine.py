@@ -1,6 +1,7 @@
 ﻿import random as r
 from TetrisCore import *
 import copy
+
 class Machine(object):
 	def __init__(self, gene=None):
 		self.gene = gene

@@ -17,23 +17,19 @@ class Tetris(wx.Frame):
 
 		#2. create board and start it.
 		if mode=='Human':
-			self.board = Human_Board(self)
+			self.PlayBoard = Human_Board(self)
 		elif mode == 'Save':
-			self.board = Save_Board(self, inputFile)
+			self.PlayBoard = Save_Board(self, inputFile)
 		elif mode == 'Machine':
-			self.board = Machine_Board(self, inputMachine)
+			self.PlayBoard = Machine_Board(self, inputMachine)
 		elif mode == 'Train':
-			self.board = Train_Board(self, inputMachine, maxTick)
+			self.PlayBoard = Train_Board(self, inputMachine, maxTick)
 		else:
 			print('Invalid mode')
-		self.board.SetFocus()
+
 		self.Center()
 		self.Show(True)
-		return self.board.start()
-
-		
-
-# end of class.
+		return self.PlayBoard.start()
 
 class Tetrominoes(object):
 	NoShape = 0
@@ -44,6 +40,9 @@ class Tetrominoes(object):
 	SquareShape = 5
 	LShape = 6
 	MirroredLShape = 7
+
+	#Added type (Not Shape, for drawing or special block)
+	Aim = 8
 
 class Shape(object):    
     coordsTable = (
@@ -138,7 +137,7 @@ class Shape(object):
 
         return result
 
-	
+
 class Board(wx.Panel):
 	BoardWidth=10
 	BoardHeight=22
@@ -266,6 +265,10 @@ class Board(wx.Panel):
 			return
 		dc = wx.PaintDC(self)
 
+		#draw outline of playing board
+		dc.SetBrush(wx.Brush('#000000'))
+		dc.DrawRectangle(1, 1, self.BoardWidth * self.squareWidth() - 1, self.BoardHeight * self.squareHeight() - 1)
+
 		for i in range(Board.BoardHeight):
 			for j in range(Board.BoardWidth):
 				shape = self.shapeAt(j, Board.BoardHeight - i - 1)
@@ -275,12 +278,19 @@ class Board(wx.Panel):
 						i * self.squareHeight(), shape)
 
 		if self.curPiece.shape() != Tetrominoes.NoShape:
+			AimY = self.curY
+			while AimY > 0:
+				if not self.checkMove(self.curPiece, self.curX, AimY - 1):
+					break
+				AimY-=1
+			for i in range(4):
+				x = self.curX + self.curPiece.x(i)
+				y = AimY - self.curPiece.y(i)
+				self.drawSquare(dc, 0 + x * self.squareWidth(), (Board.BoardHeight - y - 1) * self.squareHeight(), Tetrominoes.Aim)
 			for i in range(4):
 				x = self.curX + self.curPiece.x(i)
 				y = self.curY - self.curPiece.y(i)
-				self.drawSquare(dc, 0 + x * self.squareWidth(),
-					(Board.BoardHeight - y - 1) * self.squareHeight(),
-					self.curPiece.shape())
+				self.drawSquare(dc, 0 + x * self.squareWidth(), (Board.BoardHeight - y - 1) * self.squareHeight(), self.curPiece.shape())
 					
 	def perform_valid_key(self, keycode, verbose=True, isstr=False):
 		if keycode == wx.WXK_LEFT or (isstr and keycode=='LEFT'):
@@ -413,9 +423,9 @@ class Board(wx.Panel):
 		if not self.tryMove(self.curPiece, self.curX, self.curY):
 			self.game_over()
 
-	def tryMove(self, newPiece, newX, newY):
+	def checkMove(self, newPiece, newX, newY):
 		'''
-		try to place newPiece on (newX, newY).
+		check availability of placing newPiece on (newX, newY).
 		If failed, return False.
 		'''
 		for i in range(4):
@@ -430,6 +440,17 @@ class Board(wx.Panel):
 			if self.shapeAt(x, y) != Tetrominoes.NoShape:
 				return False
 
+		return True
+
+	def tryMove(self, newPiece, newX, newY):
+		'''
+		check first, if true:
+		try to place newPiece on (newX, newY).
+		If failed, return False.
+		'''
+		if not self.checkMove(newPiece, newX, newY):
+			return False
+
 		self.curPiece = newPiece
 		self.curX = newX
 		self.curY = newY
@@ -438,14 +459,18 @@ class Board(wx.Panel):
 		return True
 
 	def drawSquare(self,dc,x,y,shape):
+
 		colors = ['#000000', '#CC6666', '#66CC66', '#6666CC',
-                  '#CCCC66', '#CC66CC', '#66CCCC', '#DAAA00']
+                  '#CCCC66', '#CC66CC', '#66CCCC', '#DAAA00',
+				  '#646464']
 
 		light = ['#000000', '#F89FAB', '#79FC79', '#7979FC', 
-                 '#FCFC79', '#FC79FC', '#79FCFC', '#FCC600']
+                 '#FCFC79', '#FC79FC', '#79FCFC', '#FCC600',
+				 '#969696']
 
 		dark = ['#000000', '#803C3B', '#3B803B', '#3B3B80', 
-                 '#80803B', '#803B80', '#3B8080', '#806200']
+                '#80803B', '#803B80', '#3B8080', '#806200',
+				'#323232']
 
 		pen = wx.Pen(light[shape])
 		pen.SetCap(wx.CAP_PROJECTING)
@@ -633,7 +658,7 @@ class Train_Board(Board):
 
 	def initBoard_specific(self):
 		pass
-
+	
 	def OnTimer_specific(self,event):
 		'''
 		in every tick, feedforward through the machine, and get the result.

@@ -1,42 +1,14 @@
 ﻿from TetrisCore import *
 from Machine import *
-
-
-def play_machine():
-	app=wx.App()
-
-	# this should be changed to loading 'specific machine'
-	machine = DeterministicMachine()
-	#machine = RandomMachine()
-
-	tetris=Tetris()
-	tetris.initFrame('Machine', inputMachine=machine)
-	app.MainLoop()
-
-def train_machine():
-	app=wx.App()
-	machine = DeterministicMachine()
-	tetris = Tetris()
-	tetris.initFrame('Train', inputMachine=machine, maxTick=2000)
-	app.MainLoop()
-
-def play_history(filename):
-	folder='C:/Tetris/'
-	full = folder+filename
-	app = wx.App()
-	tetris = Tetris()
-	tetris.initFrame('Save',inputFile=full)
-	app.MainLoop()
-
-def human_play():
-	app = wx.App()
-	tetris = Tetris()
-	tetris.initFrame('Human')
-	app.MainLoop()
+from StartMenu import *
 
 def main():
+	app = wx.App()
+	frame = MainMenuFrame(None)
+	frame.Show()
+	app.MainLoop()
 	#human_play()
-	play_history('DeterministicMachine_140_2016-05-24_22-15-21-921958.sav')
+	#play_history('Evo_G11_P3_#42_1_2016-06-01_04-21-28-339701.sav')
 	#play_machine()
 	#train_machine()
 
