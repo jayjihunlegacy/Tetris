@@ -9,6 +9,9 @@ class Tetrominoes(object):
 	LShape = 6
 	MirroredLShape = 7
 
+	#Added type (Not Shape, for drawing or special block)
+	Aim = 8
+
 class Shape(object):    
     coordsTable = (
         ((0, 0),     (0, 0),     (0, 0),     (0, 0)),

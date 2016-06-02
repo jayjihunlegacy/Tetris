@@ -36,8 +36,8 @@ class Tetris(wx.Frame):
 		
 		if mode != 'Train':
 			self.board.SetFocus()
-			self.Center()
-			self.Show(True)
+		self.Center()
+		self.Show(True)
 
 	def start(self):
 		return self.board.start()
