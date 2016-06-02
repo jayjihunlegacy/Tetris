@@ -41,7 +41,8 @@ def evolution_train():
 	trainer = EvolutionTrainer(
 		pop_per_gen=256,
 		sel_per_gen=64,
-		max_generation=-1
+		max_generation=-1,
+		use_migration=False
 		)
 	trainer.train()
 
