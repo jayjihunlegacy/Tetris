@@ -1,7 +1,10 @@
 ﻿from Mail import *
 from multiprocessing import Process, Manager
 from Machine import *
-
+import time
+import os
+import os.path
+import pickle
 class Trainer(object):
 	def __init__(self):
 		pass
@@ -23,20 +26,54 @@ class EvolutionTrainer(Trainer):
 		self.dict_set=None
 		self.lock_set=None
 		self.sendmail=False
+		self.parenthub=r'D:\Dropbox\Tetris/'
+		self.lasttime=None
+		self.dotick=False
 
 	def get_firstpopulation(self, random):
 		if random:
 			# when initialize to random genes.
 			return EvolutionMachine.generate_genes(self.population_per_generation)
+			print('First population generated.')
 		else:
-			return None
+			# when import things.
+			filelist = os.listdir(self.parenthub)
+			filenames = list(filter(lambda filename: filename.endswith('.model'),filelist))
+			if len(filenames) == 0:
+				print('No parents found.')
+				exit(0)
+			genes = []
+
+			for filename in filenames:
+				full = self.parenthub + filename
+				with open(full, 'rb') as f:
+					l=pickle.load(f)
+				genes.append(l)
+
+			genes = EvolutionMachine.make_offsprings(genes, self.population_per_generation)
+
+			print('First population migrated.')
+			return genes
+
+	def tick(self):
+		if not self.dotick:
+			return
+		if self.lasttime is None:
+			self.lasttime = time.time()
+		else:
+			now = time.time()
+			period = now-self.lasttime
+			print('%.3fs passed.'%(period,))
+			self.lasttime=now
 
 	def train(self):
 		print('Training start!')
+		
+		self.tick()
 
 		# 1. get first population.
-		genes = self.get_firstpopulation(random=True)
-		print('First population generated.')
+		genes = self.get_firstpopulation(random=False)
+		
 
 		# 2. generate machines and tetrises.
 		app = wx.App()
@@ -81,6 +118,9 @@ class EvolutionTrainer(Trainer):
 		# for each generation, !!!!!!!!!!!!!!!!!!!
 		generation = 0
 		anyFound=False
+		
+		self.tick()
+
 		while generation != self.max_generation:
 			generation+=1	
 			fitness_dict.clear()
@@ -88,6 +128,16 @@ class EvolutionTrainer(Trainer):
 			genes_dict.clear()
 			offsprings_dict.clear()		
 			parents_dict.clear()
+
+			# 10-wise report.
+			if generation%10 == 1:
+				A_nums = [len(gene[0]) for gene in genes]
+				B_nums = [len(gene[1]) for gene in genes]
+				print('A-Complexities : (Min,Avg,Max) = (%i,%i,%i)'%(min(A_nums), sum(A_nums)//len(A_nums), max(A_nums)))
+				print('B-Complexities : (Min,Avg,Max) = (%i,%i,%i)'%(min(B_nums), sum(B_nums)//len(B_nums), max(B_nums)))
+
+
+
 			# Map the inputs.
 			gene_pool = [genes[i:i+self.gene_per_process] for i in range(0,len(genes),self.gene_per_process)]		
 			for i in range(self.PROCESS_NUM):
@@ -102,6 +152,8 @@ class EvolutionTrainer(Trainer):
 			# Wait until workers are done!
 			for lock in m_res_locks:
 				lock.acquire()
+
+			self.tick()
 
 			#=======print("End measuring")=======
 
@@ -136,7 +188,7 @@ class EvolutionTrainer(Trainer):
 				success_genes = [genes[index] for index in indices]
 				anyFound=True
 		
-			print('Generation : %i. Best fitness : %i'%(generation,max(fitnesses)))
+			print('Generation : %i. Best fitness : %i. Zero machines : %i'%(generation,max(fitnesses),sum(isZeroMachine)))
 						
 			# 4. Breed the successful genes.
 			# Map the inputs.
@@ -150,6 +202,8 @@ class EvolutionTrainer(Trainer):
 
 			for lock in b_res_locks:
 				lock.acquire()
+
+			self.tick()
 
 			#========print('End breeding')============
 			

@@ -39,15 +39,15 @@ def human_play():
 
 def evolution_train():
 	trainer = EvolutionTrainer(
-		pop_per_gen=128,
-		sel_per_gen=32,
+		pop_per_gen=256,
+		sel_per_gen=64,
 		max_generation=-1
 		)
 	trainer.train()
 
 def main():
 	#human_play()
-	#play_history('Evo_G11_P3_#42_1_2016-06-01_04-21-28-339701.sav')
+	#play_history('Evo_G1_P2_#48_1_2016-06-02_01-47-51-135877.sav')
 	#play_machine()
 	#train_machine()
 	evolution_train()

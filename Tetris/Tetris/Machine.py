@@ -237,6 +237,9 @@ class EvolutionMachine(Machine):
 	LEVEL_B_MIN_SYNAPSE = 20
 	LEVEL_B_MAX_SYNAPSE = 180
 
+	LEVEL_A_MAX_CHANGE = 20
+	LEVEL_B_MAX_CHANGE = 10
+
 	def __init__(self, gene, cool_time=1,name='EvolutionMachine'):
 		super().__init__(gene=gene)
 		self.name=name
@@ -315,28 +318,30 @@ class EvolutionMachine(Machine):
 			#1. randomly generate A_level synapses
 			num_of_syn = r.randint(500,700)
 			gene_a=[]
+			A_syn_dict =dict()
 			while len(gene_a) != num_of_syn:
 				start = r.randint(0,EvolutionMachine.INPUT_NEURON_NUM-1)
 				end = r.randint(0,EvolutionMachine.HIDDEN_NEURON_NUM-1)
 				weight = 1 if r.getrandbits(1) else -1
 				synapse = (start,end,weight)
-				for other_synapse in gene_a:
-					if other_synapse[0:2] == synapse[0:2]:
-						continue
+				if synapse[:-1] in A_syn_dict.keys():
+					continue
 				gene_a.append(synapse)
+				A_syn_dict[synapse[:-1]]=1
 
 			#2. randomly generate B_level synapses
-			num_of_syn = r.randint(60,100)
+			num_of_syn = r.randint(40,80)
 			gene_b=[]
+			B_syn_dict = dict()
 			while len(gene_b) != num_of_syn:
 				start = r.randint(0,EvolutionMachine.HIDDEN_NEURON_NUM-1)
 				end = r.randint(0,EvolutionMachine.OUTPUT_NEURON_NUM-1)
 				weight = 1 if r.getrandbits(1) else -1
 				synapse = (start,end,weight)
-				for other_synapse in gene_b:
-					if other_synapse[0:2] == synapse[0:2]:
-						continue
+				if synapse[:-1] in B_syn_dict.keys():
+					continue
 				gene_b.append(synapse)
+				B_syn_dict[synapse[:-1]]=1
 
 			newgene=(gene_a,gene_b)
 			result.append(newgene)
@@ -351,40 +356,40 @@ class EvolutionMachine(Machine):
 
 			A_syn_m, B_syn_m = mother
 			A_syn_f, B_syn_f = father
-
+			
 			#1. average A_level synapses
-			num_of_A = (len(A_syn_m) + len(A_syn_f)) // 2
-			gene_a=[]
+			smaller = min(len(A_syn_m), len(A_syn_f))
+			bigger = max(len(A_syn_m), len(A_syn_f))
+			num_of_A = r.randint(smaller,bigger)
 			A_syn_pool = A_syn_m+A_syn_f
-			while len(gene_a) != num_of_A:				
-				synapse = r.choice(A_syn_pool)
-				for other_synapse in gene_a:
-					if other_synapse[0:2] == synapse[0:2]:
-						continue
-				gene_a.append(synapse)
+			gene_a = r.sample(A_syn_pool,num_of_A)
 
 			#2. average B_level synapses
-			num_of_B = (len(B_syn_m) + len(B_syn_f)) // 2
-			gene_b=[]
+			smaller = min(len(B_syn_m), len(B_syn_f))
+			bigger = max(len(B_syn_m), len(B_syn_f))
+			num_of_B = r.randint(smaller,bigger)	
 			B_syn_pool = B_syn_m+B_syn_f
-			while len(gene_b) != num_of_B:				
-				synapse = r.choice(B_syn_pool)
-				for other_synapse in gene_b:
-					if other_synapse[0:2] == synapse[0:2]:
-						continue
-				gene_b.append(synapse)
+			gene_b = r.sample(B_syn_pool,num_of_B)
 
+			A_syn_dict = dict()
+			B_syn_dict = dict()
+			for A_syn in gene_a:
+				A_syn_dict[A_syn[:-1]]=1
+			for B_syn in gene_b:
+				B_syn_dict[B_syn[:-1]]=1
 			#3. make mutation on A.
 			# delete [0,4] weights in A_level and insert another [0,4] weights.
-			delete_a_num = r.randint(0,10)
 			if len(gene_a) < EvolutionMachine.LEVEL_A_MIN_SYNAPSE:
 				delete_a_num = 0
+			else :
+				delete_a_num = r.randint(0,EvolutionMachine.LEVEL_A_MAX_CHANGE)
 			for i in range(delete_a_num):
 				gene_a.remove(r.choice(gene_a))
 
-			insert_a_num = r.randint(0,10)
 			if len(gene_a) > EvolutionMachine.LEVEL_A_MAX_SYNAPSE:
 				insert_a_num = 0
+			else:
+				insert_a_num = r.randint(0,EvolutionMachine.LEVEL_A_MAX_CHANGE)
 
 			target_a_num = len(gene_a) + insert_a_num
 
@@ -393,21 +398,24 @@ class EvolutionMachine(Machine):
 				end = r.randint(0,EvolutionMachine.HIDDEN_NEURON_NUM-1)
 				weight = 1 if r.getrandbits(1) else -1
 				synapse = (start,end,weight)
-				for other_synapse in gene_a:
-					if other_synapse[0:2] == synapse[0:2]:
-						continue
+
+				if synapse[:-1] in A_syn_dict.keys():
+					continue
 				gene_a.append(synapse)
+				A_syn_dict[synapse[:-1]]=1
 
 			# delete [0,2] weights in B_level and insert another [0,2] weights.
-			delete_b_num = r.randint(0,5)
 			if len(gene_b) < EvolutionMachine.LEVEL_B_MIN_SYNAPSE:
 				delete_b_num=0
+			else:
+				delete_b_num = r.randint(0,EvolutionMachine.LEVEL_B_MAX_CHANGE)
 			for i in range(delete_b_num):
 				gene_b.remove(r.choice(gene_b))
 
-			insert_b_num = r.randint(0,5)
 			if len(gene_b) > EvolutionMachine.LEVEL_B_MAX_SYNAPSE:
 				insert_b_num = 0
+			else:
+				insert_b_num = r.randint(0,EvolutionMachine.LEVEL_B_MAX_CHANGE)
 
 			target_b_num = len(gene_b) + insert_b_num
 
@@ -416,11 +424,11 @@ class EvolutionMachine(Machine):
 				end = r.randint(0,EvolutionMachine.OUTPUT_NEURON_NUM-1)
 				weight = 1 if r.getrandbits(1) else -1
 				synapse = (start,end,weight)
-				for other_synapse in gene_b:
-					if other_synapse[0:2] == synapse[0:2]:
-						continue
-				gene_b.append(synapse)
 
+				if synapse[:-1] in B_syn_dict.keys():
+					continue
+				gene_b.append(synapse)
+				B_syn_dict[synapse[:-1]]=1
 
 			parent_genes.append((gene_a,gene_b))
 

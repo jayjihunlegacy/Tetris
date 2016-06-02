@@ -37,6 +37,9 @@
     <Compile Include="Shape.py">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="_Observer.py">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="_Test.py">
       <SubType>Code</SubType>
     </Compile>
