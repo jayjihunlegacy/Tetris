@@ -173,9 +173,7 @@ class Board(wx.Panel):
 			for i in range(4):
 				x = self.curX + self.curPiece.x(i)
 				y = self.curY - self.curPiece.y(i)
-				self.drawSquare(dc, 0 + x * self.squareWidth(),
-					(Board.BoardHeight - y - 1) * self.squareHeight(),
-					self.curPiece.shape())
+				self.drawSquare(dc, 0 + x * self.squareWidth(), (Board.BoardHeight - y - 1) * self.squareHeight(), self.curPiece.shape())
 					
 	def perform_valid_key(self, keycode, verbose=True, isstr=False):
 		if keycode == wx.WXK_LEFT or (isstr and keycode=='LEFT'):
@@ -314,7 +312,8 @@ class Board(wx.Panel):
 		newShape = self.newPiece()
 		self.next5Piece.setShape(newShape)
 
-		
+		self.GetParent().NextBlockPanel.SetNextPieces(self)
+
 		self.curX = Board.BoardWidth//2 + 1
 		self.curY = Board.BoardHeight - 1 + self.curPiece.minY()
 
