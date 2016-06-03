@@ -22,6 +22,9 @@ bld/
 [Bb]in/
 [Oo]bj/
 
+# Byte-compiled
+__pycache__/
+
 # Visual Studio 2015 cache/options directory
 .vs/
 
