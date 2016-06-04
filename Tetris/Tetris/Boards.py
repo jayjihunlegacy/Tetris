@@ -147,6 +147,11 @@ class Board(wx.Panel):
 			return
 		dc = wx.PaintDC(self)
 
+		#draw outline of playing board
+		dc.SetBrush(wx.Brush('#000000'))
+		dc.DrawRectangle(1, 1, self.BoardWidth * self.squareWidth() - 1, self.BoardHeight * self.squareHeight() - 1)
+
+
 		for i in range(Board.BoardHeight):
 			for j in range(Board.BoardWidth):
 				shape = self.shapeAt(j, Board.BoardHeight - i - 1)
@@ -156,6 +161,15 @@ class Board(wx.Panel):
 						i * self.squareHeight(), shape)
 
 		if self.curPiece.shape() != Tetrominoes.NoShape:
+			AimY = self.curY
+			while AimY > 0:
+				if not self.checkMove(self.curPiece, self.curX, AimY - 1):
+					break
+				AimY-=1
+			for i in range(4):
+				x = self.curX + self.curPiece.x(i)
+				y = AimY - self.curPiece.y(i)
+				self.drawSquare(dc, 0 + x * self.squareWidth(), (Board.BoardHeight - y - 1) * self.squareHeight(), Tetrominoes.Aim)
 			for i in range(4):
 				x = self.curX + self.curPiece.x(i)
 				y = self.curY - self.curPiece.y(i)
@@ -308,9 +322,9 @@ class Board(wx.Panel):
 		if not self.tryMove(self.curPiece, self.curX, self.curY):
 			self.game_over()
 
-	def tryMove(self, newPiece, newX, newY):
+	def checkMove(self, newPiece, newX, newY):
 		'''
-		try to place newPiece on (newX, newY).
+		check availability of placing newPiece on (newX, newY).
 		If failed, return False.
 		'''
 		for i in range(4):
@@ -325,6 +339,17 @@ class Board(wx.Panel):
 			if self.shapeAt(x, y) != Tetrominoes.NoShape:
 				return False
 
+		return True
+
+	def tryMove(self, newPiece, newX, newY):
+		'''
+		check first, if true:
+		try to place newPiece on (newX, newY).
+		If failed, return False.
+		'''
+		if not self.checkMove(newPiece, newX, newY):
+			return False
+
 		self.curPiece = newPiece
 		self.curX = newX
 		self.curY = newY
@@ -334,13 +359,16 @@ class Board(wx.Panel):
 
 	def drawSquare(self,dc,x,y,shape):
 		colors = ['#000000', '#CC6666', '#66CC66', '#6666CC',
-                  '#CCCC66', '#CC66CC', '#66CCCC', '#DAAA00']
+                  '#CCCC66', '#CC66CC', '#66CCCC', '#DAAA00',
+				  '#646464']
 
 		light = ['#000000', '#F89FAB', '#79FC79', '#7979FC', 
-                 '#FCFC79', '#FC79FC', '#79FCFC', '#FCC600']
+                 '#FCFC79', '#FC79FC', '#79FCFC', '#FCC600',
+				 '#969696']
 
 		dark = ['#000000', '#803C3B', '#3B803B', '#3B3B80', 
-                 '#80803B', '#803B80', '#3B8080', '#806200']
+                '#80803B', '#803B80', '#3B8080', '#806200',
+				'#323232']
 
 		pen = wx.Pen(light[shape])
 		pen.SetCap(wx.CAP_PROJECTING)

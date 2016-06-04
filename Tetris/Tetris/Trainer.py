@@ -14,7 +14,7 @@ class Trainer(object):
 
 class EvolutionTrainer(Trainer):
 	
-	def __init__(self, pop_per_gen, sel_per_gen, max_generation=-1):
+	def __init__(self, pop_per_gen, sel_per_gen, max_generation=-1, use_migration=True):
 		self.PROCESS_NUM=4
 		self.max_generation = max_generation
 		self.population_per_generation = pop_per_gen
@@ -28,13 +28,15 @@ class EvolutionTrainer(Trainer):
 		self.sendmail=False
 		self.parenthub=r'D:\Dropbox\Tetris/'
 		self.lasttime=None
-		self.dotick=False
+		self.dotick=True
+		self.use_migration=use_migration
 
-	def get_firstpopulation(self, random):
-		if random:
+	def get_firstpopulation(self):
+		if not self.use_migration:
 			# when initialize to random genes.
-			return EvolutionMachine.generate_genes(self.population_per_generation)
+			result = EvolutionMachine.generate_genes(self.population_per_generation)			
 			print('First population generated.')
+			return result
 		else:
 			# when import things.
 			filelist = os.listdir(self.parenthub)
@@ -72,7 +74,7 @@ class EvolutionTrainer(Trainer):
 		self.tick()
 
 		# 1. get first population.
-		genes = self.get_firstpopulation(random=False)
+		genes = self.get_firstpopulation()
 		
 
 		# 2. generate machines and tetrises.

@@ -43,12 +43,18 @@
     <Compile Include="_Test.py">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="StartMenu.py">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="TetrisCore.py">
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="Trainer.py">
       <SubType>Code</SubType>
     </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="Logo.bmp" />
   </ItemGroup>
   <PropertyGroup>
     <VisualStudioVersion Condition="'$(VisualStudioVersion)' == ''">10.0</VisualStudioVersion>
