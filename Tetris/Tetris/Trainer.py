@@ -264,3 +264,37 @@ class EvolutionTrainer(Trainer):
 
 			# signal the main process that the job is done!
 			b_res_lock.release()
+
+class NeuralNetTrainer(Trainer):
+	def __init__(self, num_of_hidden=100):
+		self.num_of_hidden=num_of_hidden
+		self.size_of_batch = 16
+		self.num_of_gen=100
+		super().__init__()
+
+	def train(self):
+		self.machine = NeuralNetMachine(
+			num_of_hidden=self.num_of_hidden,
+			gene=None
+			)
+		app = wx.App()
+		tetris = Tetris(mode='Train', inputMachine=self.machine,maxTick=1000)
+		
+		tetris.start()
+		for generation in range(self.num_of_gen):
+			for episode in range(self.size_of_batch):
+				# 1. run the game.
+				score = tetris.start()
+				print(score)
+				tetris.
+
+				# 2. collect output/input
+
+
+				pass
+
+			# do backprop
+
+
+
+

@@ -1,5 +1,15 @@
-﻿import random as r
+﻿import os
+os.environ['THEANO_FLAGS']='floatX=float32,device=cpu'
+import random as r
 from TetrisCore import *
+from keras.models import Sequential
+from keras.layers import Dense, Dropout, Activation
+from keras.utils import np_utils
+from keras.layers.advanced_activations import LeakyReLU
+from keras.optimizers import SGD
+import numpy
+
+
 class Machine(object):
 	def __init__(self, gene=None):
 		self.gene = gene
@@ -436,4 +446,70 @@ class EvolutionMachine(Machine):
 
 
 class NeuralNetMachine(Machine):
-	pass
+	def __init__(self, num_of_hidden, gene, cool_time=1, name='NNMachine'):
+		import keras
+		from keras.models import Sequential
+		self.num_of_hidden = num_of_hidden		
+		self.name=name
+		self.TICK_COOLTIME = cool_time
+
+		super().__init__(gene=gene)
+
+	def instantiate(self):
+		self.build_model()
+
+		if self.gene is not None:
+			self.load_weights()
+
+		self.compile_model()
+
+	def build_model(self):
+		n_input = 220
+		n_hidden = 100
+		n_output = 5
+
+		self.model = Sequential()
+		self.model.add(Dense(output_dim=n_hidden, input_dim=n_input))
+		self.model.add(LeakyReLU(0.1))
+		self.model.add(Dense(output_dim=n_output))
+		self.model.add(Activation('sigmoid'))
+
+	def load_weights(self):
+		pass
+
+	def compile_model(self,learning_rate=0.01):
+		sgd=SGD(lr=learning_rate)
+		self.model.compile(loss='binary_crossentropy',
+					 optimizer=sgd,
+					 metrics=[]
+					 )
+
+	def feedForward(self, input, tick):
+		board,curX,curY,pieces=input
+		refined_board = NeuralNetMachine.refine_board(board,curX,curY,pieces[0])	
+		input = numpy.array([refined_board])
+		result=self.model.predict(input,batch_size=1)
+		result=result[0]		
+		
+		output = tuple([1 if value>0.5 else 0 for value in result])
+		#print("FeedForward :",tick)
+		#print(output)
+		return output
+
+	def refine_board(board, curX, curY, curPiece):
+		# deepcopy the board.
+		refined_board=[]
+		for i in range(Board.BoardHeight):
+			for j in range(Board.BoardWidth):
+				if board[i][j]:
+					refined_board+=[1]
+				else:
+					refined_board+=[0]
+
+		minY = curPiece.minY()
+		for coord in curPiece.coords:
+			relX,relY = coord
+			Y = curY-relY
+			X = curX+relX
+			refined_board[Y*Board.BoardWidth + X] = -1
+		return refined_board

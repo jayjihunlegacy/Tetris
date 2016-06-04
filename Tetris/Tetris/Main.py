@@ -45,12 +45,19 @@ def evolution_train():
 		)
 	trainer.train()
 
+def neural_train():
+	trainer = NeuralNetTrainer(
+		num_of_hidden=100
+		)
+	trainer.train()
+
 def main():
 	#human_play()
-	#play_history('Evo_G1_P2_#48_1_2016-06-02_01-47-51-135877.sav')
+	#play_history('Evo_G2_P1_#11_1_2016-06-02_12-34-39-500409.sav')
 	#play_machine()
 	#train_machine()
-	evolution_train()
+	#evolution_train()
+	neural_train()
 
 if __name__=='__main__':
 	main()
