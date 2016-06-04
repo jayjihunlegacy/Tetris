@@ -288,7 +288,7 @@ class NeuralNetTrainer(Trainer):
 				# 1. run the game.
 				score = tetris.start()
 				print(score)
-				tetris.
+				#tetris.
 
 				# 2. collect output/input
 

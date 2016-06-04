@@ -1,8 +1,5 @@
 ﻿from Boards import *
 
-# end of class.
-
-
 class Tetris(wx.Frame):
 	def __init__(self,mode, inputFile=None, inputMachine=None, maxTick=-1):
 		wx.Frame.__init__(self, None, title='Tetris', size=(360, 760))
@@ -36,8 +33,8 @@ class Tetris(wx.Frame):
 		
 		if mode != 'Train':
 			self.board.SetFocus()
-		self.Center()
-		self.Show(True)
+			self.Center()
+			self.Show(True)
 
 	def start(self):
 		return self.board.start()

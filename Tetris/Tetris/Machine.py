@@ -1,7 +1,7 @@
-﻿import os
-os.environ['THEANO_FLAGS']='floatX=float32,device=cpu'
-import random as r
+﻿import random as r
 from TetrisCore import *
+import os
+os.environ['THEANO_FLAGS']='floatX=float32,device=cpu'
 from keras.models import Sequential
 from keras.layers import Dense, Dropout, Activation
 from keras.utils import np_utils
@@ -162,7 +162,8 @@ class DeterministicMachine(Machine):
 			# nothing to do any more.
 			self.aimPosition = None
 			return (0,0,0,0,1)
-		return (0,0,0,0,0)
+		else:
+			return (0,0,0,0,0)
 
 	def reset_dummyboard(self):
 		for i in range(Board.BoardHeight):
@@ -447,8 +448,6 @@ class EvolutionMachine(Machine):
 
 class NeuralNetMachine(Machine):
 	def __init__(self, num_of_hidden, gene, cool_time=1, name='NNMachine'):
-		import keras
-		from keras.models import Sequential
 		self.num_of_hidden = num_of_hidden		
 		self.name=name
 		self.TICK_COOLTIME = cool_time

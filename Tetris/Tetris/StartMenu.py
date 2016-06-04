@@ -1,4 +1,4 @@
-import wx
+﻿import wx
 from Machine import *
 from TetrisCore import *
 from Trainer import *
@@ -7,7 +7,7 @@ class MainMenuFrame(wx.Frame):
 	def __init__(self, parent):
 		wx.Frame.__init__(self, parent)
 
-		self.Size = (660, 430)
+		self.Size = (660, 450)
 		self.Panel = wx.Panel(self, wx.ID_ANY)
 
 		#selectList = ["Human_play", "Machine_play", "Play_history", "Train_machine"]
@@ -16,8 +16,9 @@ class MainMenuFrame(wx.Frame):
 		self.rb3 = wx.RadioButton(self.Panel, id=wx.ID_ANY, label='Train_machine', pos=(30,305))
 		self.rb4 = wx.RadioButton(self.Panel, id=wx.ID_ANY, label='Play_history', pos=(30,325))
 		self.rb5 = wx.RadioButton(self.Panel, id=wx.ID_ANY, label='Evolution_train', pos=(30,345))
+		self.rb6 = wx.RadioButton(self.Panel, id=wx.ID_ANY, label='Neural_train', pos=(30,365))
 
-		self.box = wx.StaticBox(self.Panel, id=wx.ID_ANY, label='Choices', pos=(20,245), size=(480, 125)) 
+		self.box = wx.StaticBox(self.Panel, id=wx.ID_ANY, label='Choices', pos=(20,245), size=(480, 145)) 
 		#self.SelectBox = wx.RadioBox(self.Panel, id=wx.ID_ANY, label='Choices', pos=(30,250), size=(300, 100), choices=selectList, style=wx.RA_SPECIFY_ROWS)
 		self.Status = self.CreateStatusBar(style=wx.STB_SHOW_TIPS)
 		self.StartButton = wx.Button(self.Panel, id==wx.ID_ANY, label='Start', pos=(520,257), size=(100, 110))
@@ -31,6 +32,7 @@ class MainMenuFrame(wx.Frame):
 		self.SelectBox.Add(self.rb3)
 		self.SelectBox.Add(self.rb4)
 		self.SelectBox.Add(self.rb5)
+		self.SelectBox.Add(self.rb6)
 		self.SelectBox.Add(self.HistoryTextCtrl)
 
 		self.StartButton.Bind(wx.EVT_BUTTON, self.OnStart)
@@ -68,6 +70,10 @@ class MainMenuFrame(wx.Frame):
 			#evolution_train
 			self.Destroy()
 			evolution_train()
+		elif self.rb6.GetValue() == True:
+			#neural_train
+			self.Destroy()
+			neural_train()
 
 		else:
 			#error
@@ -105,5 +111,12 @@ def evolution_train():
 		sel_per_gen=64,
 		max_generation=-1,
 		use_migration=False
+		)
+	trainer.train()
+
+
+def neural_train():
+	trainer = NeuralNetTrainer(
+		num_of_hidden=100
 		)
 	trainer.train()
