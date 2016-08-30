@@ -5,6 +5,8 @@ import time
 import os
 import os.path
 import pickle
+import numpy as np
+from functools import reduce
 class Trainer(object):
 	def __init__(self):
 		pass
@@ -268,10 +270,10 @@ class EvolutionTrainer(Trainer):
 			b_res_lock.release()
 
 class NeuralNetTrainer(Trainer):
-	def __init__(self, num_of_hidden=100):
+	def __init__(self, num_of_hidden=100, size_of_batch=16, num_of_gen=-1):
 		self.num_of_hidden=num_of_hidden
-		self.size_of_batch = 16
-		self.num_of_gen=100
+		self.size_of_batch =size_of_batch
+		self.num_of_gen=num_of_gen
 		super().__init__()
 
 	def train(self):
@@ -279,24 +281,85 @@ class NeuralNetTrainer(Trainer):
 			num_of_hidden=self.num_of_hidden,
 			gene=None
 			)
+		self.machine.instantiate(0.001)
 		app = wx.App()
-		tetris = Tetris(mode='Train', inputMachine=self.machine,maxTick=1000)
+		tetris = Tetris(mode='Train', inputMachine=self.machine, maxTick=400)
 		
-		tetris.start()
-		for generation in range(self.num_of_gen):
+		keycodes={wx.WXK_LEFT:0, wx.WXK_RIGHT:1, wx.WXK_UP:2, wx.WXK_DOWN:3, wx.WXK_SPACE:4}
+
+		#tetris.start()
+		generation=0
+		while generation != self.num_of_gen:
+			generation+=1
+			batch=[]
+			print('Generation #%i'%(generation,))
 			for episode in range(self.size_of_batch):
 				# 1. run the game.
+				self.machine.refresh()
 				score = tetris.start()
-				print(score)
-				#tetris.
 
 				# 2. collect output/input
+				inputs=self.machine.inputs
+				outputs=tetris.board.keys
 
+				outputdict={}
+				# 2-1. postprocess the keys.
+				for data in outputs:
+					tick, keycode=data
+					key_num = keycodes[keycode]
 
+					if tick not in outputdict.keys():
+						outputdict[tick]=[0,0,0,0,0]
+
+					outputdict[tick][key_num]=1
+
+				# 2-2. collect pair.
+				collected=[]
+				for tick,input in inputs:
+					if tick in outputdict.keys():
+						output=outputdict[tick]
+						pair=[input,output]
+						collected.append(pair)
+				
+				# 3. determine rewards.
+				if score>0:
+					reward=score
+					print('Score : ',score)
+				else:
+					if len(outputs)==0:
+						reward=0
+					else:
+						reward=-1
+					#if zero machine, reward = -1
+
+				# 4. apply reward
+				if reward==0:
+					collected=[[input, [0.1,0.1,0.1,0.1,0.1]]for tick, input in inputs[0:10]]
+				else:
+					collected=[[input, [v*reward for v in output]] for input, output in collected]
+				batch.append(collected)
+			
+			# if anything to back-propagate
+			if len(batch)==0:
+				continue
+			else:
 				pass
+				#print('Back prop!')
+			#
+			# concatenate all history regardless of episode.
+			batch = reduce(lambda x,y:x+y, batch)
 
+			X_s = [data[0][0] for data in batch]
+			Y_s = [data[1] for data in batch]
+
+			train_x = np.array(X_s)
+			train_y = np.array(Y_s)
+
+			#print(train_x.shape)
+			#print(train_y.shape)
+			
 			# do backprop
+			self.machine.backprop(train_x, train_y)
+		self.machine.save_weights()
 
-
-
-
+			

@@ -594,6 +594,9 @@ class Train_Board(Board):
 		pieces = (self.curPiece, self.nextPiece, self.next2Piece, self.next3Piece, self.next4Piece, self.next5Piece)
 		input = (self.board, self.curX, self.curY, pieces)
 		output = self.machine.feedForward(input, self.ticks)
+
+		if output is None:
+			return
 				
 		for i in range(5):
 			if output[i]>0:
@@ -601,9 +604,10 @@ class Train_Board(Board):
 				self.perform_valid_key(Board.keycodes[i],verbose=False)
 
 	def start(self):
+		self.initBoard()
 		self.isStarted=True
 		self.numLinesRemoved = 0
-		self.clearBoard()
+		#self.clearBoard()
 		self.nextPiece.setShape(self.newPiece())
 		self.next2Piece.setShape(self.newPiece())
 		self.next3Piece.setShape(self.newPiece())

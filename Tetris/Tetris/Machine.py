@@ -451,20 +451,24 @@ class NeuralNetMachine(Machine):
 		self.num_of_hidden = num_of_hidden		
 		self.name=name
 		self.TICK_COOLTIME = cool_time
+		self.weight_filename='neural.weight'
 
 		super().__init__(gene=gene)
 
-	def instantiate(self):
+	def instantiate(self, learning_rate=0.01):
+		self.learning_rate=learning_rate
 		self.build_model()
-
 		if self.gene is not None:
 			self.load_weights()
-
 		self.compile_model()
+		self.refresh()
+
+	def refresh(self):
+		self.inputs=[]
 
 	def build_model(self):
 		n_input = 220
-		n_hidden = 100
+		n_hidden = self.num_of_hidden
 		n_output = 5
 
 		self.model = Sequential()
@@ -474,25 +478,40 @@ class NeuralNetMachine(Machine):
 		self.model.add(Activation('sigmoid'))
 
 	def load_weights(self):
-		pass
+		try:
+			self.model.load_weights(self.weight_filename)
+			print('Weight imported.')
+		except:
+			print('No weight file found. Initialized randomly.')
 
-	def compile_model(self,learning_rate=0.01):
-		sgd=SGD(lr=learning_rate)
+	def save_weights(self):
+		self.model.save_weights(self.weight_filename,overwrite=True)
+		print('weight saved.')
+
+	def compile_model(self):
+		sgd=SGD(lr=self.learning_rate)
 		self.model.compile(loss='binary_crossentropy',
 					 optimizer=sgd,
 					 metrics=[]
 					 )
 
 	def feedForward(self, input, tick):
+		# if cooltime not passed
+		if tick%self.TICK_COOLTIME:
+			return (0,0,0,0,0)
+
+		# feed forward the neural network.
 		board,curX,curY,pieces=input
 		refined_board = NeuralNetMachine.refine_board(board,curX,curY,pieces[0])	
 		input = numpy.array([refined_board])
 		result=self.model.predict(input,batch_size=1)
-		result=result[0]		
+		result=result[0]
+
+		# save the input.
+		self.inputs.append((tick,input))
 		
 		output = tuple([1 if value>0.5 else 0 for value in result])
-		#print("FeedForward :",tick)
-		#print(output)
+		#print("FeedForward :", tick, ' ',output)
 		return output
 
 	def refine_board(board, curX, curY, curPiece):
@@ -512,3 +531,6 @@ class NeuralNetMachine(Machine):
 			X = curX+relX
 			refined_board[Y*Board.BoardWidth + X] = -1
 		return refined_board
+
+	def backprop(self,train_x, train_y):
+		self.model.fit(train_x, train_y,nb_epoch=1, batch_size=10,verbose=0)
